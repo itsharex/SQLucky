@@ -31,13 +31,19 @@ public class MediaSlider extends Application{
     }
     @Override
     public void start(Stage primaryStage) throws Exception {
+    	String f = "/Users/tenie/Desktop/特效.mp4";
+//    	String f = "/Users/tenie/Desktop/1637239553957883.mp4";
+//        File url = new File("C:\\Users\\tenie\\Documents\\WeChat Files\\lovehexieshehui\\FileStorage\\Video\\2021-11\\4547be5a23d9e58412e63e8aafc80078.mp4");
  
-        File url = new File("C:\\Users\\tenie\\Documents\\WeChat Files\\lovehexieshehui\\FileStorage\\Video\\2021-11\\4547be5a23d9e58412e63e8aafc80078.mp4");
- 
+    	File url = new File(f);
+    	
         Media media = new Media(url.getAbsoluteFile().toURI().toString());
         MediaPlayer mediaPlayer = new MediaPlayer(media);
         MediaView mediaView = new MediaView(mediaPlayer);
- 
+        mediaView.setFitWidth(500);
+        mediaView.setFitHeight(300);
+        
+        
         Slider processSlider=new Slider();
         Label processLabel=new Label();
         Button playButton=new Button("||");
@@ -89,8 +95,11 @@ public class MediaSlider extends Application{
 //        hbox.getChildren().addAll(processSlider,processLabel,playButton,rePlayButton,volumeSlider);
 //        borderPane.setBottom(hbox);
         borderPane.setCenter(mediaView);
+        VBox vb = new VBox();
+        vb.getChildren().add(mediaView);
+        VBox.setVgrow(mediaView, Priority.ALWAYS);
  
-        Scene scene = new Scene(borderPane,500,350);
+        Scene scene = new Scene(vb );
         primaryStage.setScene(scene);
         primaryStage.setTitle("mediaplayer");
 //        primaryStage.setMaximized(true);
