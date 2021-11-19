@@ -31,12 +31,13 @@ public class MediaSlider extends Application{
     }
     @Override
     public void start(Stage primaryStage) throws Exception {
-    	String f = "/Users/tenie/Desktop/特效.mp4";
+//    	String f = "/Users/tenie/Desktop/特效.mp4";
 //    	String f = "/Users/tenie/Desktop/1637239553957883.mp4";
-//        File url = new File("C:\\Users\\tenie\\Documents\\WeChat Files\\lovehexieshehui\\FileStorage\\Video\\2021-11\\4547be5a23d9e58412e63e8aafc80078.mp4");
- 
-    	File url = new File(f);
     	
+    	//D:\temp\sqlucky.mp4
+//        File url = new File("C:\\Users\\tenie\\Documents\\WeChat Files\\lovehexieshehui\\FileStorage\\Video\\2021-11\\4547be5a23d9e58412e63e8aafc80078.mp4");
+    	String f = "D:\\temp\\sqlucky.mp4";
+    	File url = new File(f); 
         Media media = new Media(url.getAbsoluteFile().toURI().toString());
         MediaPlayer mediaPlayer = new MediaPlayer(media);
         MediaView mediaView = new MediaView(mediaPlayer);
