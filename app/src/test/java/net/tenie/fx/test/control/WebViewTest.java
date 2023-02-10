@@ -15,12 +15,14 @@ import javafx.stage.Stage;
 public class WebViewTest extends Application {
   @Override
   public void start(final Stage stage) {
-    stage.setWidth(400);
-    stage.setHeight(500);
+    stage.setWidth(410);
+    stage.setHeight(510);
     Scene scene = new Scene(new Group());
 
 
     final WebView browser = new WebView();
+    browser.setMaxHeight(500);
+    browser.setPrefWidth(400);
     final WebEngine webEngine = browser.getEngine();
 
     ScrollPane scrollPane = new ScrollPane();
@@ -36,8 +38,9 @@ public class WebViewTest extends Application {
 
           }
         });
-    webEngine.load("file:///D:/myGit/Learning_Notes/java/chat/NiceAdmin/index.html");
-
+//    webEngine.load("file:///D:/myGit/Learning_Notes/java/chat/NiceAdmin/index.html");
+    webEngine.load("http://127.0.0.1:8088/signInPage");
+    
     scene.setRoot(scrollPane);
 
     stage.setScene(scene);
