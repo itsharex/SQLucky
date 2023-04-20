@@ -57,7 +57,7 @@ public class Project {
                 packagesWithoutBase = packagePath.substring(basePackage.length() + 1);
             }
         } catch (StringIndexOutOfBoundsException e) {
-            System.out.println("packagePath: " + packagePath + ", basePackage: " + basePackage);
+//            System.out.println("packagePath: " + packagePath + ", basePackage: " + basePackage);
             e.printStackTrace();
             return;
         }
