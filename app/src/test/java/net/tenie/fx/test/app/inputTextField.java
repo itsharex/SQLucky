@@ -8,6 +8,7 @@ import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.HBox;
 import javafx.stage.Stage;
+import javafx.stage.StageStyle;
 
 public class inputTextField extends Application {
 
@@ -54,6 +55,8 @@ public class inputTextField extends Application {
         Scene scene = new Scene(root, 300, 100);
 
         primaryStage.setScene(scene);
+        primaryStage.initStyle(StageStyle.UTILITY);//设定窗口无边框
+        primaryStage.setMaximized(true);
         primaryStage.show();
 
     }
