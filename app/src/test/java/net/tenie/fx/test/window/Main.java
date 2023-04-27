@@ -1,13 +1,9 @@
 package net.tenie.fx.test.window;
 
 import javafx.application.Application;
-import javafx.application.Platform;
 import javafx.event.Event;
-import javafx.fxml.FXMLLoader;
 import javafx.geometry.Rectangle2D;
 import javafx.scene.Cursor;
-import javafx.scene.Group;
-import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.layout.VBox;
@@ -61,7 +57,7 @@ public class Main extends Application {
     	         stage.setHeight(primaryScreenBounds.getHeight());
     	    });
     	VBox root = new VBox(8);
-    	root.getChildren().addAll(close, hidden, max, full);
+//    	root.getChildren().addAll(close, hidden, max, full);
         
     	
         stage.setTitle("Hello World");
@@ -75,7 +71,13 @@ public class Main extends Application {
             double width = stage.getWidth();
             double height = stage.getHeight();
             
-//            System.out.println("x = " + x + " | y = "+ y +"\n width = " + width + " | height = "+ height);
+            double xstage = stage.getX();
+            double ystage = stage.getY(); 
+            CommonUtility.delayRunThread(v->{
+            	 System.out.println("x = " + x + " | y = "+ y + " | xstage = "+xstage + " | ystage = "+ystage
+            			 +" width = " + width + " | height = "+ height);
+            }, 100);
+           
 //            double top = stage.get
 //            stage.get
             Cursor cursorType = Cursor.DEFAULT;// 鼠标光标初始为默认类型，若未进入调整窗口状态，保持默认类型
@@ -97,6 +99,10 @@ public class Main extends Application {
                 isRight = true;
                 cursorType = Cursor.E_RESIZE;
             }
+            else if(x <= RESIZE_WIDTH) {
+            	isTopLeft = true;
+                cursorType = Cursor.SE_RESIZE;
+            }
             else if( RESIZE_WIDTH >= y ) {
 //            	 System.out.println(y );
             	 cursorType = Cursor.S_RESIZE;
@@ -107,6 +113,7 @@ public class Main extends Application {
 				cursorType = Cursor.E_RESIZE;
 				isLeft = true;
 			}
+			
             
             
             // 最后改变鼠标光标
@@ -126,6 +133,7 @@ public class Main extends Application {
             // 窗口的x, y ;  保存窗口改变后的x、y坐标和宽度、高度，用于预判是否会小于最小宽度、最小高度
             double nextX = stage.getX();
             double nextY = stage.getY();
+            
             double stageY = stage.getY();
             double stageX = stage.getX();
             
@@ -161,69 +169,90 @@ public class Main extends Application {
                 System.out.println("y = " +y+ " | nextY = "+nextY+" | nextHeight = " + nextHeight);
 	            
             }
-            
            
             
-            if( isTop || isLeft ) {
-            	topNextHeight = stageHeight - y;
-            	leftNextWidth = stageWidth - x;
-           
-                if (topNextHeight >= viewHeight) {// 如果窗口改变后的高度小于最小高度，则高度调整到最小高度
-                	return;
-                }
-                if( topNextHeight < 0 ) {
-                	return;
-                }
+            if(isTopLeft) {
+            	stage.setX(stageX + x);  
+                stage.setWidth(stageWidth - x);
+                stage.setY(stageY +y);
+                stage.setHeight(stageHeight-y);
+            }
+           if(isLeft) {
+        		stage.setX(stageX + x);  
+        		double tmpWidth = stageWidth - x;
+        		if (tmpWidth <= MIN_WIDTH) {// 如果窗口改变后的宽度小于最小宽度，则宽度调整到最小宽度
+        			tmpWidth = MIN_WIDTH;
+ 	            }
+                stage.setWidth(tmpWidth);
+           }
+            
+            if( isTop   ) {  //|| isLeft
+	            stage.setY(stageY +y);
+	            double tmpH = stageHeight-y;
+	            if (tmpH <= MIN_HEIGHT) {// 如果窗口改变后的高度小于最小高度，则高度调整到最小高度
+	            	tmpH = MIN_HEIGHT;
+		            }
+                stage.setHeight(tmpH);
                 
-                if (leftNextWidth >= viewWidth) {// 如果窗口改变后的高度小于最小高度，则高度调整到最小高度
-                	return;
-                }
-                if( leftNextWidth < 0 ) {
-                	return;
-                }
-                 
-                
-                double tmpY  = topNextHeight - nextHeight;
-                double tmpX = leftNextWidth - nextWidth;
- 	           	 tmpY = stageY - tmpY;
- 	           	 tmpX = stageX - tmpX;
- 	           	 if(tmpY < 0 || tmpY > viewHeight) {
- 	           		 return;
- 	           	 } 
- 	             if(tmpX < 0 || tmpX > viewWidth) {
-	           		 return;
-	           	 } 
- 	           	 
- 	           	 if( topNextHeight <  MIN_HEIGHT) {
- 	           		 return ;
- 	           	 }
- 	             if( leftNextWidth <  MIN_WIDTH) {
-	           		 return ;
-	           	 }
- 	           	 
-                final double Ytmp  = tmpY;
-//                final double Widthnext = nextWidth;
-            	 
-                final double Xtmp  = tmpX;
-//                final double Widthnext = nextWidth;
-                
-                
-                final double NextHeighttop = topNextHeight;
-
-                final double NextWidthLeft = leftNextWidth;
-                
-                System.out.println("y = " +y+ " | tmpY = "+tmpY+" | topNextHeight = " + topNextHeight);
-                CommonUtility.delayRunThread(v->{
-                	 Platform.runLater(()->{
-                		  stage.setX(Xtmp); 
-         	           	  stage.setY(Ytmp);
-         	           	  
-                         stage.setWidth(NextWidthLeft);
-                         stage.setHeight(NextHeighttop);
-                         
-                        
-                   });
-                }, 100);
+//            	topNextHeight = stageHeight - y;
+//            	leftNextWidth = stageWidth - x;
+//           
+//                if (topNextHeight >= viewHeight) {// 如果窗口改变后的高度小于最小高度，则高度调整到最小高度
+//                	return;
+//                }
+//                if( topNextHeight < 0 ) {
+//                	return;
+//                }
+//                
+//                if (leftNextWidth >= viewWidth) {// 如果窗口改变后的高度小于最小高度，则高度调整到最小高度
+//                	return;
+//                }
+//                if( leftNextWidth < 0 ) {
+//                	return;
+//                }
+//                 
+//                
+//                double tmpY  = topNextHeight - nextHeight;
+//                double tmpX = leftNextWidth - nextWidth;
+// 	           	 tmpY = stageY - tmpY;
+// 	           	 tmpX = stageX - tmpX;
+// 	           	 if(tmpY < 0 || tmpY > viewHeight) {
+// 	           		 return;
+// 	           	 } 
+// 	             if(tmpX < 0 || tmpX > viewWidth) {
+//	           		 return;
+//	           	 } 
+// 	           	 
+// 	           	 if( topNextHeight <  MIN_HEIGHT) {
+// 	           		 return ;
+// 	           	 }
+// 	             if( leftNextWidth <  MIN_WIDTH) {
+//	           		 return ;
+//	           	 }
+// 	           	 
+//                final double Ytmp  = tmpY;
+////                final double Widthnext = nextWidth;
+//            	 
+//                final double Xtmp  = tmpX;
+////                final double Widthnext = nextWidth;
+//                
+//                
+//                final double NextHeighttop = topNextHeight;
+//
+//                final double NextWidthLeft = leftNextWidth;
+//                
+//                System.out.println("y = " +y+ " | tmpY = "+tmpY+" | topNextHeight = " + topNextHeight);
+//                CommonUtility.delayRunThread(v->{
+//                	 Platform.runLater(()->{
+//                		  stage.setX(Xtmp); 
+//         	           	  stage.setY(Ytmp);
+//         	           	  
+//                         stage.setWidth(NextWidthLeft);
+//                         stage.setHeight(NextHeighttop);
+//                         
+//                        
+//                   });
+//                }, 100);
                
                
             }
