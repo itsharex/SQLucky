@@ -18,11 +18,14 @@ public class Main extends Application {
     //窗体拉伸属性
     private static boolean isRight;// 是否处于右边界调整窗口状态
     private static boolean isBottomRight;// 是否处于右下角调整窗口状态
+    private static boolean isBottomLeft;
+     
     private static boolean isBottom;// 是否处于下边界调整窗口状态
     private static boolean isTop;
     private static boolean isLeft;
     private static boolean isTopLeft;
     
+     
     private final static int RESIZE_WIDTH = 5;// 判定是否为调整窗口状态的范围与边界距离
     private final static double MIN_WIDTH = 300;// 窗口最小宽度
     private final static double MIN_HEIGHT = 250;// 窗口最小高度
@@ -83,10 +86,11 @@ public class Main extends Application {
             Cursor cursorType = Cursor.DEFAULT;// 鼠标光标初始为默认类型，若未进入调整窗口状态，保持默认类型
  
             // 先将所有调整窗口状态重置
-            isLeft =  isTop = isRight = isBottomRight = isBottom = false;
+            isBottomLeft= isTopLeft=  isLeft =  isTop = isRight = isBottomRight = isBottom = false;
             if (y >= height - RESIZE_WIDTH) {
                 if (x <= RESIZE_WIDTH) {// 左下角调整窗口状态
- 
+                	 isBottomLeft = true;
+                     cursorType = Cursor.NE_RESIZE;
                 } else if (x >= width - RESIZE_WIDTH) {// 右下角调整窗口状态
                     isBottomRight = true;
                     cursorType = Cursor.SE_RESIZE;
@@ -99,10 +103,7 @@ public class Main extends Application {
                 isRight = true;
                 cursorType = Cursor.E_RESIZE;
             }
-            else if(x <= RESIZE_WIDTH) {
-            	isTopLeft = true;
-                cursorType = Cursor.SE_RESIZE;
-            }
+           
             else if( RESIZE_WIDTH >= y ) {
 //            	 System.out.println(y );
             	 cursorType = Cursor.S_RESIZE;
@@ -113,7 +114,10 @@ public class Main extends Application {
 				cursorType = Cursor.E_RESIZE;
 				isLeft = true;
 			}
-			
+			 else if(x <= RESIZE_WIDTH) {
+	            	isTopLeft = true;
+	                cursorType = Cursor.SE_RESIZE;
+	         }
             
             
             // 最后改变鼠标光标
@@ -171,12 +175,24 @@ public class Main extends Application {
             }
            
             
-            if(isTopLeft) {
-            	stage.setX(stageX + x);  
-                stage.setWidth(stageWidth - x);
-                stage.setY(stageY +y);
-                stage.setHeight(stageHeight-y);
-            }
+			if (isTopLeft) {
+				double tmpWidth = stageWidth - x;
+				if (tmpWidth <= MIN_WIDTH) {// 如果窗口改变后的宽度小于最小宽度，则宽度调整到最小宽度
+					tmpWidth = MIN_WIDTH;
+					return ;
+				}
+				double tmpH = stageHeight - y;
+				if (tmpH <= MIN_HEIGHT) {// 如果窗口改变后的高度小于最小高度，则高度调整到最小高度
+					tmpH = MIN_HEIGHT;
+					return ;
+				}
+
+				stage.setX(stageX + x);
+				stage.setWidth(tmpWidth);
+
+				stage.setY(stageY + y);
+				stage.setHeight(tmpH);
+			}
            if(isLeft) {
         		stage.setX(stageX + x);  
         		double tmpWidth = stageWidth - x;
