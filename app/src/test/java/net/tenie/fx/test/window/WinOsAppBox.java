@@ -6,14 +6,16 @@ import javafx.geometry.Rectangle2D;
 import javafx.scene.Cursor;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
+import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.VBox;
 import javafx.stage.Screen;
 import javafx.stage.Stage;
 import javafx.stage.StageStyle;
 import javafx.stage.WindowEvent;
 import net.tenie.Sqlucky.sdk.utility.CommonUtility;
+import net.tenie.fx.factory.ButtonFactory;
 
-public class Main extends Application {
+public class WinOsAppBox extends Application {
 	 
     //窗体拉伸属性
     private static boolean isRight;// 是否处于右边界调整窗口状态
@@ -61,9 +63,13 @@ public class Main extends Application {
     	         stage.setWidth(primaryScreenBounds.getWidth());
     	         stage.setHeight(primaryScreenBounds.getHeight());
     	    });
+    	
     	VBox root = new VBox(8);
-//    	root.getChildren().addAll(close, hidden, max, full);
-        
+
+    	AnchorPane operateBtnPane = ButtonFactory.codeAreabtnInit();
+    	root.getChildren().add(operateBtnPane);
+//    	root.getChildr en().addAll(close, hidden, max, full);
+    	
     	
         stage.setTitle("Hello World");
         stage.setScene(new Scene(root, 800, 450));
