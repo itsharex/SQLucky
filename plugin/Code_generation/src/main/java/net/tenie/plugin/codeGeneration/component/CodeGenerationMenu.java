@@ -30,7 +30,6 @@ public class CodeGenerationMenu {
 		Infoservice.setDisable(true);
 		Infoservice.setOnAction(v -> {
 			DBNodeInfoPo info = ComponentGetter.appComponent.currentDBInfoNode();
-//			System.out.println("test  :  " +info.getType());
 			if (info.getType() == TreeItemType.TABLE) {
 				SqluckyConnector sqlcon = info.getConnpo();
 				String tab = info.getName();
@@ -41,10 +40,9 @@ public class CodeGenerationMenu {
 					DocumentPo fileNode = new DocumentPo();
 					fileNode.setTitle(gen.getPoClassFileName());
 					fileNode.setText(gen.getPoTxt());
-//					SqluckyTab mtb = ComponentGetter.appComponent.sqluckyTab(fileNode);
 
 					MyEditorSheet sheet = new MyEditorSheet(fileNode, null);
-					sheet.showMyTab(); // 界面上显示
+					sheet.showEditor(); // 界面上显示
 				} catch (Exception e) {
 					e.printStackTrace();
 				}
