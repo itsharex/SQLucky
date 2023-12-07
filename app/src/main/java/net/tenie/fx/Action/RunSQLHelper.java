@@ -22,23 +22,25 @@ import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import net.tenie.Sqlucky.sdk.component.CommonButtons;
 import net.tenie.Sqlucky.sdk.component.ComponentGetter;
+import net.tenie.Sqlucky.sdk.component.MyEditorSheetHelper;
 import net.tenie.Sqlucky.sdk.component.SdkComponent;
-import net.tenie.Sqlucky.sdk.component.SqluckyEditor;
+import net.tenie.Sqlucky.sdk.db.DBConns;
+import net.tenie.Sqlucky.sdk.db.SqluckyAppDB;
 import net.tenie.Sqlucky.sdk.db.SqluckyConnector;
 import net.tenie.Sqlucky.sdk.po.DbTableDatePo;
 import net.tenie.Sqlucky.sdk.po.SheetFieldPo;
 import net.tenie.Sqlucky.sdk.po.db.ProcedureFieldPo;
+import net.tenie.Sqlucky.sdk.po.db.SqlData;
 import net.tenie.Sqlucky.sdk.subwindow.MyAlert;
-import net.tenie.Sqlucky.sdk.utility.CommonUtility;
+import net.tenie.Sqlucky.sdk.utility.AppCommonAction;
+import net.tenie.Sqlucky.sdk.utility.CommonUtils;
 import net.tenie.Sqlucky.sdk.utility.DateUtils;
 import net.tenie.Sqlucky.sdk.utility.ParseSQL;
 import net.tenie.Sqlucky.sdk.utility.StrUtils;
+import net.tenie.Sqlucky.sdk.utility.TableViewUtils;
 import net.tenie.fx.Action.sqlExecute.ProcedureAction;
 import net.tenie.fx.Action.sqlExecute.RunSqlStatePo;
 import net.tenie.fx.Action.sqlExecute.SelectAction;
-import net.tenie.fx.Action.sqlExecute.SqlExecuteOption;
-import net.tenie.fx.Po.SqlData;
-import net.tenie.fx.config.DBConns;
 import net.tenie.fx.dao.DmlDdlDao;
 
 /**
@@ -57,6 +59,8 @@ public class RunSQLHelper {
 	private static JFXButton runLinebtn;
 	private static JFXButton stopbtn;
 	private static JFXButton otherbtn;
+	
+	public  static boolean isRunning = false;
 
 	ExecutorService service = Executors.newFixedThreadPool(1);
 	private static SqluckyConnector tmpSqlConn;
@@ -74,11 +78,21 @@ public class RunSQLHelper {
 
 	@SuppressWarnings("restriction")
 	private static void runMain(RunSqlStatePo state) {
-		tmpSqlConn = state.getSqlConn();
-		// 等待加载动画
-		SqlExecuteOption.addWaitingPane(state.getTidx(), state.getIsRefresh());
-		List<SqlData> allsqls = new ArrayList<>();
+		if (isRunning) {
+			MyAlert.errorAlert("有查询在进行中, 请稍等!");
+			return;
+		}
 		try {
+			isRunning = true;
+			settingBtn();
+			if (!state.getSqlConn().isAlive()) {
+				MyAlert.errorAlert("连接中断, 请重新连接!");
+				return;
+			}
+			// 等待加载动画
+			SdkComponent.addWaitingPane(state.getTidx(), state.getIsRefresh());
+			List<SqlData> allsqls = new ArrayList<>();
+
 			// 获取sql 语句
 			String sqlstr = state.getSqlStr();
 			// 执行创建存储过程函数, 触发器等
@@ -87,56 +101,72 @@ public class RunSQLHelper {
 					SqlData sq = new SqlData(sqlstr, 0, sqlstr.length());
 					allsqls.add(sq);
 				} else {
-					String str = SqluckyEditor.getCurrentCodeAreaSQLText();
+					String str = MyEditorSheetHelper.getCurrentCodeAreaSQLText();
 					SqlData sq = new SqlData(str, 0, str.length());
 					allsqls.add(sq);
 				}
 				// 执行传入的sql, 非界面上的sql
 			} else if (StrUtils.isNotNullOrEmpty(sqlstr)) { // 执行指定sql
-				allsqls = SqlExecuteOption.epurateSql(sqlstr);
+				allsqls = SqluckyAppDB.epurateSql(sqlstr);
 			} else {
 				// 获取将要执行的sql 语句 , 如果有选中就获取选中的sql
-				allsqls = SqlExecuteOption.willExecSql(state.getIsCurrentLine());
+				allsqls = SqluckyAppDB.willExecSql(state.getIsCurrentLine());
 			}
+			String waitShowSqlStr  = "";
+			for(int k = 0; k < allsqls.size(); k++) {
+//				var sqltmp = allsqls.get(k);
+//				sqltmp.sql()
+				waitShowSqlStr +=	allsqls.get(k).sql() + "\n";
+			}
+		
 			// 执行sql
 			var rsVal = execSqlList(allsqls, state.getSqlConn(), state);
 
 			// 执行sql的状态保存
-			if (state.getStatusKey() != null)
+			if (state.getStatusKey() != null) {
 				RUN_STATUS.put(state.getStatusKey(), rsVal);
 
+			}
 		} catch (Exception e) {
 			e.printStackTrace();
 		} finally {
-			settingBtn();
-			state.setCallProcedureFields(null);
-			state.setIsCallFunc(false);
+			if (isRunning) {
+				settingBtn();
+				state.setCallProcedureFields(null);
+				state.setIsCallFunc(false);
+				SdkComponent.rmWaitingPane();
+			}
+
+			isRunning = false;
 		}
 
 	}
 
 	// 执行查询sql 并拼装成一个表, 多个sql生成多个表
-	private static Integer execSqlList(List<SqlData> allsqls, SqluckyConnector dpo, RunSqlStatePo state)
+	private static Integer execSqlList(List<SqlData> allsqls, SqluckyConnector sqluckyConn, RunSqlStatePo state)
 			throws SQLException {
 		Integer rsVal = 1;
 		String sqlstr;
 		String sql;
-		Connection conn = dpo.getConn();
+		Connection conn = sqluckyConn.getConn();
+	
 		int sqllenght = allsqls.size();
 		DbTableDatePo ddlDmlpo = DbTableDatePo.setExecuteInfoPo();
 		List<SqlData> errObj = new ArrayList<>();
 
 		for (int i = 0; i < sqllenght; i++) {
-			sqlstr = allsqls.get(i).sql;
-			sql = StrUtils.trimComment(sqlstr, "--");
+			sqlstr = allsqls.get(i).sql();
+			sql = sqlstr;
 			int type = ParseSQL.parseType(sql);
 			String msg = "";
+			
+			SdkComponent.setWaitTabLabelText(sql);
 			try {
 				if (state.getIsCallFunc()) { // 调用存储过程
-					ProcedureAction.procedureAction(sql, dpo, state.getCallProcedureFields(), state.getTidx(),
+					ProcedureAction.procedureAction(sql, sqluckyConn, state.getCallProcedureFields(), state.getTidx(),
 							state.getIsLock(), thread, state.getIsRefresh());
 				} else if (type == ParseSQL.SELECT) { // 调用查询
-					SelectAction.selectAction(sql, dpo, state.getTidx(), state.getIsLock(), thread,
+					SelectAction.selectAction(sql, sqluckyConn, state.getTidx(), state.getIsLock(), thread,
 							state.getIsRefresh());
 				} else {
 					if (type == ParseSQL.UPDATE) {
@@ -165,7 +195,7 @@ public class RunSQLHelper {
 				}
 			} catch (Exception e) {
 				msg = "failed : " + e.getMessage();
-				msg += "\n" + dpo.translateErrMsg(msg);
+				msg += "\n" + sqluckyConn.translateErrMsg(msg);
 				SqlData sd = allsqls.get(i);
 				errObj.add(sd);
 				rsVal = 0;
@@ -176,32 +206,32 @@ public class RunSQLHelper {
 					final String msgVal = msg;
 					Platform.runLater(() -> {
 						MyAlert.showNotifiaction(msgVal);
-						SqlExecuteOption.rmWaitingPane(true);
+//						TableViewUtils.rmWaitingPane(true);
 					});
 				} else {
 					// 显示字段是只读的
 					ObservableList<SheetFieldPo> fls = ddlDmlpo.getFields();
 					var row = ddlDmlpo.addRow();
-					ddlDmlpo.addData(row, CommonUtility.createReadOnlyStringProperty(DateUtils.dateToStrL(new Date())),
+					ddlDmlpo.addData(row, CommonUtils.createReadOnlyStringProperty(DateUtils.dateToStrL(new Date())),
 							fls.get(0));
-					ddlDmlpo.addData(row, CommonUtility.createReadOnlyStringProperty(msg), fls.get(1));
+					ddlDmlpo.addData(row, CommonUtils.createReadOnlyStringProperty(msg), fls.get(1));
 					int endIdx = sqlstr.length() > 100 ? 100 : sqlstr.length();
 					ddlDmlpo.addData(row,
-							CommonUtility.createReadOnlyStringProperty(sqlstr.substring(0, endIdx) + " ... "),
+							CommonUtils.createReadOnlyStringProperty(sqlstr.substring(0, endIdx) + " ... "),
 							fls.get(2));
 				}
 			}
 
 		}
 		// 如果 ddlDmlpo 中有 msg的信息 就会显示到界面上
-		SqlExecuteOption.showExecuteSQLInfo(ddlDmlpo, thread);
+		TableViewUtils.showInfo(ddlDmlpo, thread);
 		// 如果是执行的界面上的sql, 那么对错误的sql渲染为红色
 		if (StrUtils.isNullOrEmpty(state.getSqlStr())) {
 			Platform.runLater(() -> {
 				if (errObj.size() > 0) {
 					for (SqlData sd : errObj) {
-						int bg = sd.begin;
-						SqluckyEditor.ErrorHighlighting(bg, sd.sql);
+						int bg = sd.begin();
+						MyEditorSheetHelper.ErrorHighlighting(bg, sd.sql());
 					}
 				}
 			});
@@ -212,6 +242,7 @@ public class RunSQLHelper {
 	// 在子线程执行 运行sql 的任务
 	public static Thread createThread(Consumer<RunSqlStatePo> action, RunSqlStatePo state) {
 		return new Thread() {
+			@Override
 			public void run() {
 				logger.info("线程启动了" + this.getName());
 				action.accept(state);
@@ -264,12 +295,10 @@ public class RunSQLHelper {
 
 	// 刷新
 	public static Long refresh(SqluckyConnector sqlConn, String sqlv, String tabIdxv, boolean isLockv) {
-		Long statusKey = CommonUtility.dateTime();
+		Long statusKey = CommonUtils.dateTime();
 
 		RUN_STATUS.put(statusKey, -1);
 
-		settingBtn();
-		SdkComponent.showDetailPane();
 		RunSqlStatePo state = new RunSqlStatePo(sqlv, sqlConn);
 		state.setTidx(tabIdxv);
 		state.setIsRefresh(true);
@@ -310,9 +339,6 @@ public class RunSQLHelper {
 			return;
 		}
 
-		settingBtn();
-		SdkComponent.showDetailPane();
-
 		RunSqlStatePo state = new RunSqlStatePo(sqlv, sqlConn);
 		state.setIsCallFunc(true);
 		state.setCallProcedureFields(fields);
@@ -324,7 +350,7 @@ public class RunSQLHelper {
 	public static void runSQLMethod(String sqlv, String tabIdxv, boolean isCreateFunc, Boolean isCurrentLine) {
 		if (checkDBconn())
 			return;
-		SqluckyConnector sqlConn = CommonAction.getDbConnectionPoByComboBoxDbConnName();
+		SqluckyConnector sqlConn = AppCommonAction.getDbConnectionPoByComboBoxDbConnName();
 		Connection connv = sqlConn.getConn();
 		try {
 			if (connv == null) {
@@ -336,9 +362,6 @@ public class RunSQLHelper {
 			e.printStackTrace();
 			return;
 		}
-
-		settingBtn();
-		SdkComponent.showDetailPane();
 
 		RunSqlStatePo state = new RunSqlStatePo(sqlv, sqlConn);
 		state.setTidx(tabIdxv);
@@ -372,9 +395,6 @@ public class RunSQLHelper {
 			return;
 		}
 
-		settingBtn();
-		SdkComponent.showDetailPane();
-
 		RunSqlStatePo state = new RunSqlStatePo(sqlv, sqlConn);
 		state.setIsCreateFunc(isCreateFunc);
 
@@ -397,9 +417,6 @@ public class RunSQLHelper {
 			e.printStackTrace();
 			return;
 		}
-
-		settingBtn();
-		SdkComponent.showDetailPane();
 
 		RunSqlStatePo state = new RunSqlStatePo(sqlv, sqlConn);
 		state.setIsRefresh(true);

@@ -7,9 +7,12 @@ import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import net.tenie.Sqlucky.sdk.db.DBTools;
+import net.tenie.Sqlucky.sdk.db.Dbinfo;
 import net.tenie.Sqlucky.sdk.po.RsData;
 import net.tenie.Sqlucky.sdk.po.myEntry;
 import net.tenie.Sqlucky.sdk.po.db.TableFieldPo;
@@ -423,15 +426,6 @@ public class FetchDBInfoCommonTools {
 		return newFiled;
 	}
 
-	public List<String> batchReorg(Set<String> ls) {
-		List<String> rs = new ArrayList<String>();
-		for (String tab : ls) {
-			String reorg = "CALL SYSPROC.ADMIN_CMD('reorg  TABLE INFODMS." + tab + " ') ;";
-			rs.add(reorg);
-		}
-
-		return rs;
-	}
 
 	/**
 	 * 批处理插入数据 INSERT

@@ -2,8 +2,12 @@ package net.tenie.plugin.DataModel;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+
 import com.jfoenix.controls.JFXButton;
+
 import javafx.application.Platform;
+import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.collections.transformation.FilteredList;
 import javafx.collections.transformation.SortedList;
@@ -13,8 +17,11 @@ import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
 import javafx.scene.control.TreeItem;
 import javafx.scene.control.TreeView;
+import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.Pane;
 import net.tenie.Sqlucky.sdk.component.ComponentGetter;
+import net.tenie.Sqlucky.sdk.component.MyBottomSheet;
+import net.tenie.Sqlucky.sdk.component.MyTooltipTool;
 import net.tenie.Sqlucky.sdk.component.SdkComponent;
 import net.tenie.Sqlucky.sdk.db.ResultSetCellPo;
 import net.tenie.Sqlucky.sdk.db.ResultSetPo;
@@ -23,6 +30,7 @@ import net.tenie.Sqlucky.sdk.db.SqluckyAppDB;
 import net.tenie.Sqlucky.sdk.db.SqluckyConnector;
 import net.tenie.Sqlucky.sdk.po.SheetDataValue;
 import net.tenie.Sqlucky.sdk.ui.IconGenerator;
+import net.tenie.Sqlucky.sdk.ui.UiTools;
 import net.tenie.Sqlucky.sdk.utility.StrUtils;
 import net.tenie.plugin.DataModel.po.DataModelTablePo;
 import net.tenie.plugin.DataModel.po.DataModelTreeNodePo;
@@ -38,7 +46,7 @@ public class DataModelTabTree {
 
 	public static TreeView<DataModelTreeNodePo> DataModelTreeView;
 	public static TreeItem<DataModelTreeNodePo> treeRoot;
-	private DataModelOperate optionPanel;
+	public	static DataModelOperate optionPanel;
 	private Pane btnsBox;
 	String filePath = "";
 
@@ -61,21 +69,13 @@ public class DataModelTabTree {
 		DataModelTabTreeContextMenu contextMenu = new DataModelTabTreeContextMenu(this);
 		DataModelTreeView.setContextMenu(contextMenu.getContextMenu());
 		// 选中监听事件
-//		treeView.getSelectionModel().selectedItemProperty().addListener(treeViewContextMenu(treeView));
 		DataModelTreeView.getSelectionModel().select(treeRoot);
-
-//		DataModelTreeView = treeView;
 
 		// 显示设置, 双击事件也在这里设置
 		DataModelTreeView.setCellFactory(new DataModelNodeCellFactory());
 
 		optionPanel = new DataModelOperate();
 		btnsBox = optionPanel.getOptionVbox();
-
-//		vbox.getStyleClass().add("myTreeView-vbox");
-//		vbox.getChildren().addAll( filterHbox, treeView);
-//		vbox.getStyleClass().add("myModalDialog");
-//		VBox.setVgrow(treeView, Priority.ALWAYS);
 
 		// 恢复上次的数据
 		DataModelUtility.recoverModelInfoNode(treeRoot);
@@ -88,6 +88,8 @@ public class DataModelTabTree {
 	 * @param mdTreeNode
 	 */
 	public static void modelInfoTreeAddTableTreeNode(TreeItem<DataModelTreeNodePo> mdTreeNode) {
+		var queryField = optionPanel.getTxt();
+		queryField.clear();
 		List<TreeItem<DataModelTreeNodePo>> nodels = new ArrayList<>();
 
 		DataModelTreeNodePo dmpo = mdTreeNode.getValue();
@@ -101,10 +103,26 @@ public class DataModelTabTree {
 		}
 		if (nodels.size() > 0) {
 			Platform.runLater(() -> {
+				mdTreeNode.getChildren().clear();
 				mdTreeNode.getChildren().addAll(nodels);
 				DataModelTreeView.getSelectionModel().select(mdTreeNode.getChildren().get(0)); // 选中节点
+				
+				// 将模型的子节点数据集放入缓存(搜索会用到)
+				Map<String, ObservableList<TreeItem<DataModelTreeNodePo>>> rootMap = DataModelOperate.rootMap;
+				// 模型名称
+				var modelName = mdTreeNode.getValue().getName();
+				 
+				// 模型的孩子（表）， 添加到缓存集合中
+				ObservableList<TreeItem<DataModelTreeNodePo>> tmps = FXCollections.observableArrayList();
+				tmps.addAll(mdTreeNode.getChildren());
+				rootMap.put(modelName, tmps);
+			
 			});
-		}
+			
+		} 
+
+		
+		 
 
 	}
 
@@ -116,11 +134,10 @@ public class DataModelTabTree {
 	 * @return
 	 */
 	public static void showFields(Long tableId) {
-//		Connection conn =  null;
 		SqluckyConnector SqluckyConn = null;
 		try {
 			SdkComponent.addWaitingPane(-1);
-
+//			MyBottomSheet myBottomSheet = null;
 			// 操作区, 控件
 			DataModelTablePo tbpo = DataModelDAO.selectTableById(tableId);
 			if (tbpo != null) {
@@ -141,57 +158,74 @@ public class DataModelTabTree {
 			// 查询框
 			TextField textField = new TextField();
 			textField.getStyleClass().add("myTextField");
-			textField.setVisible(false);
+			AnchorPane txtAP = UiTools.textFieldAddCleanBtn(textField);
+			txtAP.setVisible(false);
 
 			JFXButton query = new JFXButton();
 			query.setGraphic(ComponentGetter.getIconDefActive("search"));
 			query.setOnAction(e -> {
-				textField.setVisible(!textField.isVisible());
+				txtAP.setVisible(!txtAP.isVisible());
 			});
+			// 导出excel
+			JFXButton exportExcel = new JFXButton();
+			exportExcel.setGraphic(IconGenerator.svgImageDefActive("share-square-o"));
 
 			// 字段信息保存按钮
 			JFXButton saveBtn = new JFXButton();
 			saveBtn.setGraphic(IconGenerator.svgImageDefActive("save"));
 			saveBtn.setDisable(true);
 
+			// 独立窗口
+			JFXButton dockSideBtn = new JFXButton();
+			dockSideBtn.setGraphic(IconGenerator.svgImageDefActive("material-filter-none"));
+
+			dockSideBtn.setTooltip(MyTooltipTool.instance("Dock side"));
+//			dockSideBtn.setDisable(disable);
+
 			List<Node> tableHeadOptionNode = new ArrayList<>();
 			tableHeadOptionNode.add(tabNameLabel);
 			tableHeadOptionNode.add(tabNameLabel2);
 			tableHeadOptionNode.add(commentLabel);
 			tableHeadOptionNode.add(saveBtn);
+
+			tableHeadOptionNode.add(exportExcel);
+
+			tableHeadOptionNode.add(dockSideBtn);
+
 			tableHeadOptionNode.add(query);
-			tableHeadOptionNode.add(textField);
+			tableHeadOptionNode.add(txtAP);
 
 			// 查询数据库, 获取字段信息
 //			conn = SqluckyAppDB.getConn();
 			SqluckyConn = SqluckyAppDB.getSqluckyConnector();
-			String sql = "select DEF_KEY as FIELD,"
-							+ " DEF_NAME AS NAME , " 
-							+ "COMMENT, " 
-							+ "TYPE_FULL_NAME, "
-							+ "PRIMARY_KEY, " 
-							+ "NOT_NULL, " 
-							+ "AUTO_INCREMENT, "
-							+ "DEFAULT_VALUE, " 
-							+ "PRIMARY_KEY_NAME, "
-							+ "NOT_NULL_NAME, " 
-							+ "AUTO_INCREMENT_NAME  "
-							+ "from DATA_MODEL_TABLE_FIELDS where TABLE_ID = "
-							+ tableId;
+			String sql = "select DEF_KEY as FIELD," + " DEF_NAME AS NAME , " + "COMMENT, " + "TYPE_FULL_NAME, "
+					+ "PRIMARY_KEY, " + "NOT_NULL, " + "AUTO_INCREMENT, " + "DEFAULT_VALUE, " + "PRIMARY_KEY_NAME, "
+					+ "NOT_NULL_NAME, " + "AUTO_INCREMENT_NAME  " + "from DATA_MODEL_TABLE_FIELDS where TABLE_ID = "
+					+ tableId;
 
-			SheetDataValue sheetDaV = DataModelUtility.dataModelQueryFieldsShow(sql, SqluckyConn, tableName,
+//			
+			MyBottomSheet myBottomSheet = DataModelUtility.dataModelQueryFieldsShow(sql, SqluckyConn, tableName,
 					tableHeadOptionNode, DataModelOperate.tableInfoColWidth);
-			sheetDaV.addBtn("save", saveBtn);
+			SheetDataValue sheetDaV = myBottomSheet.getTableData();
+			sheetDaV.setSaveBtn(saveBtn);
+			dockSideBtn.setOnMouseClicked(e -> {
+				myBottomSheet.dockSide();
+
+			});
+
 			// 保存按钮处理
 			ResultSetPo resultSetPo = sheetDaV.getDataRs();
 			saveBtn.setOnAction(e -> {
 				var connObj = SqluckyAppDB.getConn();
 				try {
-					DataModelDAO.saveTableInfo(saveBtn, resultSetPo, tableId, connObj);
+					DataModelDAO.saveTableInfo(myBottomSheet, saveBtn, resultSetPo, tableId, connObj);
 				} finally {
 					SqluckyAppDB.closeConn(connObj);
 				}
 
+			});
+			exportExcel.setOnAction(e -> {
+				myBottomSheet.exportExcelAction(false);
 			});
 
 			// tableView 处理

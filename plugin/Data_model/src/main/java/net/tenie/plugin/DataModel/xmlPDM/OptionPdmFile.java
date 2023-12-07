@@ -8,7 +8,7 @@ import java.util.List;
 import org.apache.commons.io.FileUtils;
 
 import net.tenie.Sqlucky.sdk.utility.StrUtils;
-import net.tenie.Sqlucky.sdk.utility.XmlUtil;
+import net.tenie.Sqlucky.sdk.utility.XmlUtils;
 import net.tenie.plugin.DataModel.po.DataModelInfoPo;
 import net.tenie.plugin.DataModel.po.DataModelTableFieldsPo;
 import net.tenie.plugin.DataModel.po.DataModelTablePo;
@@ -18,18 +18,18 @@ public class OptionPdmFile {
 	static public DataModelInfoPo read(String FilePath) throws IOException {
 //		  String xmlFileToString = XmlUtil.xmlFileToString(FilePath);
  		  String xmlFileToString = FileUtils.readFileToString(new File(FilePath) , "UTF-8");
-		  xmlPdmModel model = XmlUtil.xmlToBean(xmlFileToString, xmlPdmModel.class);
+		  xmlPdmModel model = XmlUtils.xmlToBean(xmlFileToString, xmlPdmModel.class);
 		  DataModelInfoPo po =  pdmConversion(model);
 		  return po;
 	}
 	
 	static public DataModelInfoPo read(File file) throws Exception {
 			
-		  String xmlFileToString = XmlUtil.xmlFileToString(file.getAbsolutePath());
+		  String xmlFileToString = XmlUtils.xmlFileToString(file.getAbsolutePath());
 //		  String xmlFileToString = FileUtils.readFileToString(file , "UTF-8");
 //		  xmlFileToString = xmlFileToString.replaceAll("/[\\u0000-\\u0008\\u000b\\u000c\\u000e-\\u001f\\ud800-\\udfff\\ufffe\\uffff]/g", "");
 //		  xmlFileToString = filter_xml_marks(xmlFileToString);
-		  xmlPdmModel model = XmlUtil.xmlToBean(xmlFileToString, xmlPdmModel.class);
+		  xmlPdmModel model = XmlUtils.xmlToBean(xmlFileToString, xmlPdmModel.class);
 		  DataModelInfoPo po =  pdmConversion(model);
 		  return po;
 	}
@@ -110,41 +110,4 @@ public class OptionPdmFile {
 		return out;
 	}
 	
-    public static void main(String[] args) throws IOException {
-//    	DataModelInfoPo po = read("D:\\workDir\\data\\福特doc\\\\InfoDMS&GMS_DB2.pdm");
-//    	DataModelInfoPo po = read("D:\\workDir\\data\\InfoDMS&GMS_DB2.pdm");
-//    
-//    	System.out.println(po);
-//    	//构造数据模型实例并赋值
-//        XmlSendFileModel xmlSendFileModel = XmlSendFileModel.builder(). 
-//                bankType("SELF").
-//                moneySum(new BigDecimal(20)).
-//                totalIty(new BigDecimal(20)).build();
-//        //调用util类把bean对象转换成XML字符串
-//        String xmlStr = XMLUtil.beanToXmlStr(xmlSendFileModel);
-//        // 写入xml字符串到文件。
-//        XMLUtil.strToXmlFile(xmlStr, new File("D:\\myGit\\xmltext.xml"));
-//        System.out.println("xml文件生成完毕");
-//
-//        //读取一个XML文件成XML字符串格式。
-////        System.out.println("输出XML文件的字符串 = " + XMLUtil.xmlFileToString("D:\\myGit\\xmltext.xml"));
-//        String xmlFileToString = XmlUtil.xmlFileToString("D:\\myGit\\xmltext.xml");
-//    	  String xmlFileToString = XmlUtil.xmlFileToString("D:\\workDir\\data\\InfoDMS&GMS_DB2.pdm");
-//        
-//        
-//        //读取一个XML文件成XML字符串格式。
-////        String xmlFileToString = XmlUtil.xmlFileToString(file.getAbsolutePath());
-    	  String xmlFileToString = FileUtils.readFileToString(new File("D:\\workDir\\data\\InfoDMS&GMS_DB2.pdm") , "UTF-8");
-        xmlPdmModel model = XmlUtil.xmlToBean(xmlFileToString, xmlPdmModel.class);
-//        
-////       System.out.println(model);
-       System.out.println(model.getoRootObject().getcChildren().size());
-       System.out.println(model.getoRootObject().getcChildren().get(0).getcPackages().size());
-
-       System.out.println(model.getoRootObject().getcChildren().get(0).getcPackages().get(0).getcTables().size());
-
-       System.out.println(model.getoRootObject().getcChildren().get(0).getcPackages().get(1).getcTables().size());
-       System.out.println(model.getoRootObject().getcChildren().get(0).getcPackages().get(2).getcTables());
-       System.out.println(model.getoRootObject().getcChildren().get(0).getcPackages().get(3));
-	}
 }

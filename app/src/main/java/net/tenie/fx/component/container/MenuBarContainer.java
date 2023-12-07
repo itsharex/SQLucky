@@ -3,23 +3,27 @@ package net.tenie.fx.component.container;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.scene.control.Menu;
 import javafx.scene.control.MenuBar;
 import javafx.scene.control.MenuItem;
 import javafx.scene.control.SeparatorMenuItem;
 import net.tenie.Sqlucky.sdk.component.ComponentGetter;
+import net.tenie.Sqlucky.sdk.component.MyEditorSheetHelper;
 import net.tenie.Sqlucky.sdk.component.SdkComponent;
-import net.tenie.Sqlucky.sdk.component.SqluckyEditor;
 import net.tenie.Sqlucky.sdk.config.CommonConst;
 import net.tenie.Sqlucky.sdk.config.KeyBindingCache;
-import net.tenie.Sqlucky.sdk.subwindow.ModalDialog;
+import net.tenie.Sqlucky.sdk.subwindow.DialogTools;
+import net.tenie.Sqlucky.sdk.subwindow.ImportCsvWindow;
+import net.tenie.Sqlucky.sdk.subwindow.ImportExcelWindow;
+import net.tenie.Sqlucky.sdk.subwindow.ImportSQLWindow;
 import net.tenie.Sqlucky.sdk.ui.IconGenerator;
-import net.tenie.Sqlucky.sdk.utility.CommonUtility;
+import net.tenie.Sqlucky.sdk.utility.AppCommonAction;
+import net.tenie.Sqlucky.sdk.utility.CommonUtils;
 import net.tenie.Sqlucky.sdk.utility.StrUtils;
-import net.tenie.fx.Action.CommonAction;
+import net.tenie.fx.Action.CommonEventHandler;
 import net.tenie.fx.Action.RunSQLHelper;
-import net.tenie.fx.component.MyAreaTab;
 import net.tenie.fx.plugin.PluginManageWindow;
 import net.tenie.fx.window.CheckUpdateWindow;
 import net.tenie.fx.window.ConnectionEditor;
@@ -27,7 +31,12 @@ import net.tenie.fx.window.DataTransferWindow;
 import net.tenie.fx.window.KeysBindWindow;
 import net.tenie.fx.window.SignInWindow;
 
-/*   @author tenie */
+/**
+ * 顶部菜单栏
+ * 
+ * @author tenie
+ *
+ */
 public class MenuBarContainer {
 	private static Logger logger = LogManager.getLogger(MenuBarContainer.class);
 	private MenuBar mainMenuBar;
@@ -57,9 +66,8 @@ public class MenuBarContainer {
 
 		MenuItem open = new MenuItem(StrUtils.MenuItemNameFormat("Open"));
 		open.setGraphic(IconGenerator.svgImageDefActive("folder-open"));
-//		open.setAccelerator(KeyCombination.keyCombination("shortcut + u"));
 		open.setOnAction(value -> {
-			CommonAction.openSqlFile();
+			AppCommonAction.openSqlFile();
 		});
 		KeyBindingCache.menuItemBinding(open);
 
@@ -78,22 +86,20 @@ public class MenuBarContainer {
 		Save.setGraphic(IconGenerator.svgImageDefActive("floppy-o"));
 		Save.setOnAction(value -> {
 			// 保存sql文本到硬盘
-			CommonAction.saveSqlAction();
+//			CommonAction.saveSqlAction();
+			MyEditorSheetHelper.saveSqlAction();
 		});
 
 		KeyBindingCache.menuItemBinding(Save);
 
 		MenuItem exit = new MenuItem(StrUtils.MenuItemNameFormat("Exit"));
 		exit.setGraphic(IconGenerator.svgImageDefActive("power-off"));
-//		exit.setAccelerator(KeyCombination.keyCombination("shortcut+Q"));
 		exit.setOnAction((ActionEvent t) -> {
-			CommonAction.mainPageClose();
+			CommonEventHandler.mainPageClose();
 		});
 		KeyBindingCache.menuItemBinding(exit);
 
-		mn.getItems().addAll(open,
-//				openEncoding, 
-				Save, new SeparatorMenuItem(), exit);
+		mn.getItems().addAll(open, Save, new SeparatorMenuItem(), exit);
 		return mn;
 	}
 
@@ -101,93 +107,92 @@ public class MenuBarContainer {
 		Menu mn = new Menu("Edit");
 
 		MenuItem runMenu = new MenuItem(StrUtils.MenuItemNameFormat("Run SQL"));
+		runMenu.setGraphic(IconGenerator.svgImageDefActive("play"));
 		runMenu.setOnAction(value -> {
-			RunSQLHelper.runSQLMethod();
+			MyEditorSheetHelper.selectCurrentLine();
+			Platform.runLater(()->RunSQLHelper.runSQLMethod());
+			
 		});
 		MenuItem runCurrentMenu = new MenuItem(StrUtils.MenuItemNameFormat("Run SQL Current Line"));
+		runCurrentMenu.setGraphic(IconGenerator.svgImageDefActive("step-forward"));
 		runCurrentMenu.setOnAction(value -> {
 			RunSQLHelper.runCurrentLineSQLMethod();
 		});
 
 		MenuItem codeAutocompletionMenu = new MenuItem(StrUtils.MenuItemNameFormat("Code Autocompletion"));
 		codeAutocompletionMenu.setOnAction(value -> {
-			SqluckyEditor.currentMyTab().getSqlCodeArea().callPopup();
+			MyEditorSheetHelper.getActivationEditorSheet().getSqluckyEditor().callPopup();
 		});
 
 		MenuItem nce = new MenuItem(StrUtils.MenuItemNameFormat("Add New Edit Page"));
-//		nce.setAccelerator(KeyCombination.keyCombination("shortcut+T"));
+		nce.setGraphic(IconGenerator.svgImageDefActive("plus-square"));
 		nce.setOnAction(value -> {
-			MyAreaTab.addCodeEmptyTabMethod();
+//			MyAreaTab.addCodeEmptyTabMethod();
+			MyEditorSheetHelper.addEmptyHighLightingEditor();
 		});
 
 		MenuItem cce = new MenuItem(StrUtils.MenuItemNameFormat("Close Data Table"));
-//		cce.setAccelerator(KeyCombination.keyCombination("alt+W"));
 		cce.setOnAction(value -> {
-			CommonAction.closeDataTable();
+			AppCommonAction.closeDataTable();
 		});
 
 		MenuItem Find = new MenuItem(StrUtils.MenuItemNameFormat("Find"));
 		Find.setGraphic(IconGenerator.svgImageDefActive("search"));
-//		Find.setAccelerator(KeyCombination.keyCombination("shortcut+F"));
 		Find.setOnAction(value -> {
-			CommonUtility.findReplace(false);
+			CommonUtils.findReplace(false);
 		});
 
 		MenuItem FindReplace = new MenuItem(StrUtils.MenuItemNameFormat("Replace"));
-//		FindReplace.setAccelerator(KeyCombination.keyCombination("shortcut+R"));
 		FindReplace.setOnAction(value -> {
-			CommonUtility.findReplace(true);
+			CommonUtils.findReplace(true);
 		});
 
 		MenuItem Format = new MenuItem(StrUtils.MenuItemNameFormat("Format"));
-//		Format.setAccelerator(KeyCombination.keyCombination("shortcut+shift+F"));
+		Format.setGraphic(IconGenerator.svgImageDefActive("paragraph"));
 		Format.setOnAction(value -> {
-			CommonAction.formatSqlText();
+			CommonUtils.formatSqlText();
 		});
 
 		MenuItem commentCode = new MenuItem(StrUtils.MenuItemNameFormat("Line Comment"));
-//		commentCode.setAccelerator(KeyCombination.keyCombination("shortcut+/"));
 		commentCode.setOnAction(value -> {
-			CommonAction.addAnnotationSQLTextSelectText();
+			AppCommonAction.addAnnotationSQLTextSelectText();
 		});
 
 		// 大写
 		MenuItem UpperCase = new MenuItem(StrUtils.MenuItemNameFormat("Upper Case"));
-//		UpperCase.setAccelerator(KeyCombination.keyCombination("shortcut+shift+X"));
 		UpperCase.setOnAction(value -> {
-			CommonAction.UpperCaseSQLTextSelectText();
+			AppCommonAction.UpperCaseSQLTextSelectText();
 		});
 
 		MenuItem LowerCase = new MenuItem(StrUtils.MenuItemNameFormat("Lower Case"));
-//		LowerCase.setAccelerator(KeyCombination.keyCombination("shortcut+shift+Y"));
 		LowerCase.setOnAction(value -> {
-			CommonAction.LowerCaseSQLTextSelectText();
+			AppCommonAction.LowerCaseSQLTextSelectText();
 		});
 
 		// Underscore to hump
 		MenuItem underscore = new MenuItem(StrUtils.MenuItemNameFormat("Underscore To Hump"));
-//		underscore.setAccelerator(KeyCombination.keyCombination("shortcut+shift+R"));
 		underscore.setOnAction(value -> {
-			CommonAction.underlineCaseCamel();
+			AppCommonAction.underlineCaseCamel();
 		});
 
 		MenuItem Hump = new MenuItem(StrUtils.MenuItemNameFormat("Hump To Underscore"));
-//		Hump.setAccelerator(KeyCombination.keyCombination("shortcut+shift+T"));
 		Hump.setOnAction(value -> {
-			CommonAction.CamelCaseUnderline();
+			AppCommonAction.CamelCaseUnderline();
 		});
 
 		Menu cursorMenu = new Menu("Cursor");
-		MenuItem mvB = new MenuItem(StrUtils.MenuItemNameFormat("Move to begin of line")); // (ctrl+shift+A)
+		MenuItem mvB = new MenuItem(StrUtils.MenuItemNameFormat("Move to begin of line"));
 		mvB.setGraphic(IconGenerator.svgImageDefActive("step-backward"));
 		mvB.setOnAction(e -> {
-			SqluckyEditor.currentMyTab().getSqlCodeArea().moveAnchorToLineBegin();
+//			SqluckyEditorUtils.currentMyTab().getSqlCodeArea().moveAnchorToLineBegin();
+			MyEditorSheetHelper.getActivationEditorSheet().getSqluckyEditor().moveAnchorToLineBegin();
 		});
 
-		MenuItem mvE = new MenuItem(StrUtils.MenuItemNameFormat("Move to end of line")); // (ctrl+shift+E)
+		MenuItem mvE = new MenuItem(StrUtils.MenuItemNameFormat("Move to end of line"));
 		mvE.setGraphic(IconGenerator.svgImageDefActive("step-forward"));
 		mvE.setOnAction(e -> {
-			SqluckyEditor.currentMyTab().getSqlCodeArea().moveAnchorToLineEnd();
+//			SqluckyEditorUtils.currentMyTab().getSqlCodeArea().moveAnchorToLineEnd();
+			MyEditorSheetHelper.getActivationEditorSheet().getSqluckyEditor().moveAnchorToLineEnd();
 		});
 
 		cursorMenu.getItems().addAll(mvB, mvE);
@@ -195,32 +200,38 @@ public class MenuBarContainer {
 		Menu enditLine = new Menu("Edit Line");
 		MenuItem delWord = new MenuItem(StrUtils.MenuItemNameFormat("Delete the word before the cursor")); // (ctrl+shift+W)
 		delWord.setOnAction(e -> {
-			SqluckyEditor.currentMyTab().getSqlCodeArea().delAnchorBeforeWord();
+//			SqluckyEditorUtils.currentMyTab().getSqlCodeArea().delAnchorBeforeWord();
+			MyEditorSheetHelper.getActivationEditorSheet().getSqluckyEditor().delAnchorBeforeWord();
 		});
 
 		MenuItem delChar = new MenuItem(StrUtils.MenuItemNameFormat("Delete the character before the cursor")); // (ctrl+shift+H)
 		delChar.setOnAction(e -> {
-			SqluckyEditor.currentMyTab().getSqlCodeArea().delAnchorBeforeChar();
+//			SqluckyEditorUtils.currentMyTab().getSqlCodeArea().delAnchorBeforeChar();
+			MyEditorSheetHelper.getActivationEditorSheet().getSqluckyEditor().delAnchorBeforeChar();
 		});
 
 		MenuItem delAllChar = new MenuItem(StrUtils.MenuItemNameFormat("Delete all characters before the cursor"));// (ctrl+shift+U)
 		delAllChar.setOnAction(e -> {
-			SqluckyEditor.currentMyTab().getSqlCodeArea().delAnchorBeforeString();
+//			SqluckyEditorUtils.currentMyTab().getSqlCodeArea().delAnchorBeforeString();
+			MyEditorSheetHelper.getActivationEditorSheet().getSqluckyEditor().delAnchorBeforeString();
 		});
 
 		MenuItem delWordBackward = new MenuItem(StrUtils.MenuItemNameFormat("Delete the word after the cursor"));// (alt+shift+D)
 		delWordBackward.setOnAction(e -> {
-			SqluckyEditor.currentMyTab().getSqlCodeArea().delAnchorAfterWord();
+//			SqluckyEditorUtils.currentMyTab().getSqlCodeArea().delAnchorAfterWord();
+			MyEditorSheetHelper.getActivationEditorSheet().getSqluckyEditor().delAnchorAfterWord();
 		});
 
 		MenuItem delCharBackward = new MenuItem(StrUtils.MenuItemNameFormat("Delete the character after the cursor"));// (ctrl+shift+D)
 		delCharBackward.setOnAction(e -> {
-			SqluckyEditor.currentMyTab().getSqlCodeArea().delAnchorAfterChar();
+//			SqluckyEditorUtils.currentMyTab().getSqlCodeArea().delAnchorAfterChar();
+			MyEditorSheetHelper.getActivationEditorSheet().getSqluckyEditor().delAnchorAfterChar();
 		});
 		MenuItem delAllCharBackward = new MenuItem(
-				StrUtils.MenuItemNameFormat("Delete all characters after the cursor"));// (ctrl+shift+K)
+				StrUtils.MenuItemNameFormat("Delete all characters after the cursor"));
 		delAllCharBackward.setOnAction(e -> {
-			SqluckyEditor.currentMyTab().getSqlCodeArea().delAnchorAfterString();
+//			SqluckyEditorUtils.currentMyTab().getSqlCodeArea().delAnchorAfterString();
+			MyEditorSheetHelper.getActivationEditorSheet().getSqluckyEditor().delAnchorAfterString();
 		});
 		enditLine.getItems().addAll(delWord, delChar, delAllChar, delWordBackward, delCharBackward, delAllCharBackward);
 
@@ -228,6 +239,7 @@ public class MenuBarContainer {
 				FindReplace, new SeparatorMenuItem(), Format, commentCode, new SeparatorMenuItem(), UpperCase,
 				LowerCase, underscore, Hump, new SeparatorMenuItem(), cursorMenu, enditLine);
 
+		// 给菜单按钮绑定快捷
 		KeyBindingCache.menuItemBinding(runMenu);
 		KeyBindingCache.menuItemBinding(runCurrentMenu);
 		KeyBindingCache.menuItemBinding(codeAutocompletionMenu);
@@ -253,16 +265,39 @@ public class MenuBarContainer {
 	Menu createToolsMenu() {
 		Menu mn = new Menu("Tools");
 		// 数据迁移
-		MenuItem dataTransfer = new MenuItem(StrUtils.MenuItemNameFormat("Data TransFer"));
+		MenuItem dataTransfer = new MenuItem(StrUtils.MenuItemNameFormat("Data Transfer"));
 		dataTransfer.setGraphic(IconGenerator.svgImageDefActive("mfglabs-random"));
 		dataTransfer.setOnAction(value -> {
-			// TODO
 			if (dtw == null) {
 				dtw = new DataTransferWindow();
 			}
 			dtw.show();
 
 		});
+
+		// 导入数据
+		Menu importData = new Menu(StrUtils.MenuItemNameFormat("Import Data"));
+		importData.setGraphic(IconGenerator.svgImageDefActive("bootstrap-save-file"));
+
+		MenuItem importExcelFile = new MenuItem(StrUtils.MenuItemNameFormat("Import Excel"));
+		importExcelFile.setGraphic(IconGenerator.svgImageDefActive("EXCEL"));
+		importExcelFile.setOnAction(value -> {
+			ImportExcelWindow.showWindow("", "");
+		});
+
+		MenuItem importCsv = new MenuItem(StrUtils.MenuItemNameFormat("Import CSV"));
+		importCsv.setGraphic(IconGenerator.svgImageDefActive("CSV"));
+		importCsv.setOnAction(value -> {
+			ImportCsvWindow.showWindow("", "");
+		});
+
+		MenuItem importSqlFile = new MenuItem(StrUtils.MenuItemNameFormat("Import Sql File"));
+		importSqlFile.setGraphic(IconGenerator.svgImageDefActive("SQL"));
+		importSqlFile.setOnAction(value -> {
+			ImportSQLWindow.showWindow("", "");
+		});
+		importData.getItems().addAll(importExcelFile, importCsv, importSqlFile);
+
 		MenuItem addDB = new MenuItem(StrUtils.MenuItemNameFormat("Add New DB Connection"));
 		addDB.setOnAction(value -> {
 			ConnectionEditor.ConnectionInfoSetting();
@@ -301,7 +336,7 @@ public class MenuBarContainer {
 
 		MenuItem hideLeft = new MenuItem(StrUtils.MenuItemNameFormat("Hide/Show DB Info Panel"));
 		hideLeft.setOnAction(value -> {
-			CommonAction.hideLeft();
+			AppCommonAction.hideLeft();
 		});
 
 		MenuItem hideBottom = new MenuItem(StrUtils.MenuItemNameFormat("Hide/Show Data View Panel"));
@@ -310,10 +345,9 @@ public class MenuBarContainer {
 		});
 
 		MenuItem hideLeftBottom = new MenuItem(StrUtils.MenuItemNameFormat("Hide/Show All Panels"));
-//		hideLeftBottom.setAccelerator(KeyCombination.keyCombination("shortcut+H"));
 		hideLeftBottom.setGraphic(IconGenerator.svgImageDefActive("arrows-alt"));
 		hideLeftBottom.setOnAction(value -> {
-			CommonAction.hideLeftBottom();
+			AppCommonAction.hideLeftBottom();
 		});
 
 		// 主题变化
@@ -323,20 +357,20 @@ public class MenuBarContainer {
 		MenuItem themeDark = new MenuItem(StrUtils.MenuItemNameFormat("Dark"));
 		themeDark.setGraphic(IconGenerator.svgImageDefActive("moon"));
 		themeDark.setOnAction(value -> {
-			CommonAction.setThemeRestart(CommonConst.THEME_DARK);
+			AppCommonAction.setThemeRestart(CommonConst.THEME_DARK);
 
 		});
 
 		MenuItem themeLight = new MenuItem(StrUtils.MenuItemNameFormat("Light"));
 		themeLight.setGraphic(IconGenerator.svgImageDefActive("sun"));
 		themeLight.setOnAction(value -> {
-			CommonAction.setThemeRestart(CommonConst.THEME_LIGHT);
+			AppCommonAction.setThemeRestart(CommonConst.THEME_LIGHT);
 		});
 
 		MenuItem themeYellow = new MenuItem(StrUtils.MenuItemNameFormat("Yellow"));
 		themeYellow.setGraphic(IconGenerator.svgImageDefActive("adjust"));
 		themeYellow.setOnAction(value -> {
-			CommonAction.setThemeRestart(CommonConst.THEME_YELLOW);
+			AppCommonAction.setThemeRestart(CommonConst.THEME_YELLOW);
 		});
 
 		Theme.getItems().addAll(themeDark, themeLight, themeYellow);
@@ -346,17 +380,15 @@ public class MenuBarContainer {
 		fontSize.setGraphic(IconGenerator.svgImageDefActive("text-height"));
 
 		MenuItem fontSizePlus = new MenuItem(StrUtils.MenuItemNameFormat("Font Size +"));
-//		fontSizePlus.setAccelerator(KeyCombination.keyCombination("shortcut+EQUALS"));
 		fontSizePlus.setGraphic(IconGenerator.svgImageDefActive("plus-circle"));
 		fontSizePlus.setOnAction(value -> {
-			CommonAction.changeFontSize(true);
+			AppCommonAction.changeFontSize(true);
 		});
 
 		MenuItem fontSizeMinus = new MenuItem(StrUtils.MenuItemNameFormat("Font Size -"));
-//		fontSizeMinus.setAccelerator(KeyCombination.keyCombination("shortcut+MINUS"));
 		fontSizeMinus.setGraphic(IconGenerator.svgImageDefActive("minus-circle"));
 		fontSizeMinus.setOnAction(value -> {
-			CommonAction.changeFontSize(false);
+			AppCommonAction.changeFontSize(false);
 		});
 
 		fontSize.getItems().addAll(fontSizePlus, fontSizeMinus);
@@ -370,10 +402,9 @@ public class MenuBarContainer {
 
 		});
 
-		mn.getItems().addAll(dataTransfer, new SeparatorMenuItem(), addDB, editConn, openConn, closeConn, closeALlConn,
-				deleteConn, new SeparatorMenuItem(), hideLeft, hideBottom, hideLeftBottom, new SeparatorMenuItem()
-//				, EnCoding
-				, Theme, new SeparatorMenuItem(), fontSize, keysBind);
+		mn.getItems().addAll(dataTransfer, importData, new SeparatorMenuItem(), addDB, editConn, openConn, closeConn,
+				closeALlConn, deleteConn, new SeparatorMenuItem(), hideLeft, hideBottom, hideLeftBottom,
+				new SeparatorMenuItem(), Theme, new SeparatorMenuItem(), fontSize, keysBind);
 
 		KeyBindingCache.menuItemBinding(fontSizeMinus);
 		KeyBindingCache.menuItemBinding(fontSizePlus);
@@ -384,41 +415,29 @@ public class MenuBarContainer {
 
 	Menu createHelpMenu() {
 		Menu mn = new Menu("Help");
-//		mn.setGraphic(IconGenerator.svgImageDefActive("info-circle"));
 		MenuItem about = new MenuItem(StrUtils.MenuItemNameFormat("About"));
 		about.setGraphic(IconGenerator.svgImageDefActive("info-circle"));
 		about.setOnAction(value -> {
-			ModalDialog.showAbout();
+			DialogTools.showAbout();
 		});
 
 		MenuItem SignInMenuItem = new MenuItem(StrUtils.MenuItemNameFormat("Sign In"));
 		SignInMenuItem.setGraphic(IconGenerator.svgImageDefActive("sign-in"));
 		SignInMenuItem.setOnAction(value -> {
-//			SignInWindow.createWorkspaceConfigWindow();
 			SignInWindow.show("");
 		});
 
 		MenuItem SignUpMenuItem = new MenuItem(StrUtils.MenuItemNameFormat("Sign Up"));
 		SignUpMenuItem.setGraphic(IconGenerator.svgImageDefActive("windows-clipboard-variant-edit"));
 		SignUpMenuItem.setOnAction(value -> {
-//			SignUpWindow.createWorkspaceConfigWindow();
-			CommonUtility.OpenURLInBrowser("https://app.sqlucky.com/");
+			CommonUtils.OpenURLInBrowser("https://app.sqlucky.com/");
 		});
 
 		MenuItem checkForUpdates = new MenuItem(StrUtils.MenuItemNameFormat("Check For Updates"));
-//		checkForUpdates.setGraphic(IconGenerator.svgImageDefActive("zero-app-pai"));
 		var svg = IconGenerator.sqluckyLogoSVG();
 		checkForUpdates.setGraphic(svg);
 		checkForUpdates.setOnAction(value -> {
-
 			CheckUpdateWindow.show("");
-//			String version = HttpUtil.get("http://127.0.0.1:8088/sqlucky/version");
-//			if(ConfigVal.version.equals(version)) {
-//				MyAlert.alertWait("已经是最新版本!");
-//			}else {
-//				
-//			}
-
 		});
 
 		mn.getItems().addAll(SignInMenuItem, SignUpMenuItem, checkForUpdates, new SeparatorMenuItem(), about);

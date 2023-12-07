@@ -8,6 +8,7 @@ import javafx.geometry.Side;
 import javafx.scene.Scene;
 import javafx.scene.control.Label;
 import javafx.scene.control.MenuBar;
+import javafx.scene.control.TreeView;
 import javafx.scene.image.Image;
 import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.BorderPane;
@@ -17,10 +18,11 @@ import javafx.scene.layout.VBox;
 import net.tenie.Sqlucky.sdk.component.ComponentGetter;
 import net.tenie.Sqlucky.sdk.component.DataViewContainer;
 import net.tenie.Sqlucky.sdk.config.ConfigVal;
+import net.tenie.Sqlucky.sdk.po.component.TreeNodePo;
 import net.tenie.Sqlucky.sdk.ui.IconGenerator;
 import net.tenie.Sqlucky.sdk.ui.LoadingAnimation;
-import net.tenie.Sqlucky.sdk.utility.CommonUtility;
-import net.tenie.fx.component.AppWindowComponentGetter;
+import net.tenie.Sqlucky.sdk.utility.CommonUtils;
+import net.tenie.fx.component.InfoTree.DBinfoTree;
 
 /*   @author tenie */
 public class AppWindow {
@@ -28,17 +30,24 @@ public class AppWindow {
 	private MenuBarContainer mainMenuBar;
 	private MasterDetailPane masterDetailPane;
 	private OperateContainer operate;
-	private DataViewContainer dataView;
+	public static DataViewContainer dataView;
 	private Scene appScene;
 	private StackPane root;
-
 	// 窗口的顶部(主菜单的位置)
 	private AnchorPane headAnchorPane;
 
+	// 全局组件
+//	public static DataViewContainer dataView;
+	public static TreeView<TreeNodePo> treeView;
+	public static DBinfoTree dbInfoTree;
+	public static AnchorPane dbInfoTreeFilter;
+	public static volatile AppWindow app;
+
 	public AppWindow() {
 		mainWindow = new VBox();
-		CommonUtility.addCssClass(mainWindow, "main-background");
+		CommonUtils.addCssClass(mainWindow, "main-background");
 		ComponentGetter.mainWindow = mainWindow;
+		
 
 		mainMenuBar = new MenuBarContainer();
 		masterDetailPane = new MasterDetailPane(Side.BOTTOM);
@@ -54,7 +63,7 @@ public class AppWindow {
 		VBox.setVgrow(masterDetailPane, Priority.ALWAYS);
 
 		ComponentGetter.masterDetailPane = masterDetailPane;
-		AppWindowComponentGetter.dataView = dataView;
+//		AppWindowComponentGetter.dataView = dataView;
 		// 设置tree 面板的显示比例
 		masterDetailPane.widthProperty().addListener((ob, ov, nv) -> {
 			if (nv.doubleValue() > 1) {
@@ -89,13 +98,14 @@ public class AppWindow {
 			mainWindow.getChildren().addAll(headAnchorPane, masterDetailPane);
 			VBox.setMargin(masterDetailPane, new Insets(3, 3, 3, 3));
 //TODO			mainWindow.getChildren().addAll(mainMenuBar.getMainMenuBar(), masterDetailPane);
-			CommonUtility.fadeTransition(operate.getContainer(), 2000);
-			CommonUtility.fadeTransition(dataView.getContainer(), 2000);
-			CommonUtility.fadeTransition(mainMenuBar.getMainMenuBar(), 2000);
-			CommonUtility.fadeTransition(masterDetailPane, 2000);
+			CommonUtils.fadeTransition(operate.getContainer(), 2000);
+			CommonUtils.fadeTransition(dataView.getContainer(), 2000);
+			CommonUtils.fadeTransition(mainMenuBar.getMainMenuBar(), 2000);
+			CommonUtils.fadeTransition(masterDetailPane, 2000);
 		});
 
-		CommonUtility.fadeTransition(mainWindow, 1000);
+		CommonUtils.fadeTransition(mainWindow, 1000);
+		ComponentGetter.treeView = treeView;
 	}
 
 	static {

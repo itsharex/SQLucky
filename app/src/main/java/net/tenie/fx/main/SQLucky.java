@@ -1,10 +1,12 @@
 package net.tenie.fx.main;
 
+import java.io.File;
 import java.io.IOException;
 import java.sql.Connection;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.Consumer;
 
 import org.apache.logging.log4j.LogManager;
@@ -17,22 +19,29 @@ import javafx.application.Platform;
 import javafx.geometry.Rectangle2D;
 import javafx.scene.Node;
 import javafx.scene.Scene;
+import javafx.scene.control.Tab;
+import javafx.scene.control.TabPane;
 import javafx.scene.image.Image;
 import javafx.stage.Screen;
 import javafx.stage.Stage;
 import net.tenie.Sqlucky.sdk.component.ComponentGetter;
+import net.tenie.Sqlucky.sdk.component.MyEditorSheet;
+import net.tenie.Sqlucky.sdk.component.MyEditorSheetHelper;
 import net.tenie.Sqlucky.sdk.config.ConfigVal;
 import net.tenie.Sqlucky.sdk.db.SqluckyAppDB;
+import net.tenie.Sqlucky.sdk.subwindow.MyAlert;
 import net.tenie.Sqlucky.sdk.ui.LoadingAnimation;
-import net.tenie.Sqlucky.sdk.utility.CommonUtility;
+import net.tenie.Sqlucky.sdk.utility.AppCommonAction;
+import net.tenie.Sqlucky.sdk.utility.CommonUtils;
 import net.tenie.Sqlucky.sdk.utility.StrUtils;
-import net.tenie.fx.Action.CommonAction;
 import net.tenie.fx.Action.CommonEventHandler;
 import net.tenie.fx.Action.Log4jPrintStream;
-import net.tenie.fx.component.MyAreaTab;
+import net.tenie.fx.Action.SettingKeyBinding;
+import net.tenie.fx.component.ScriptTree.ScriptTabTree;
 import net.tenie.fx.component.UserAccount.UserAccountAction;
 import net.tenie.fx.component.container.AppWindow;
 import net.tenie.fx.component.container.AppWindowReStyleByWinOS;
+import net.tenie.fx.dao.ConnectionDao;
 import net.tenie.fx.factory.ServiceLoad;
 import net.tenie.lib.db.h2.AppDao;
 import net.tenie.sdkImp.SqluckyAppComponent;
@@ -50,9 +59,11 @@ public class SQLucky extends Application {
 	public static Stage pStage;
 	private AppWindow app;
 	private Scene scene;
-	private Scene tmpscene;
 	private Image img;
 	private String Theme;
+//	private boolean tableExists = true;
+//	public static volatile boolean beginInit = false;
+	private boolean transferDB = false;
 	private static Logger logger = LogManager.getLogger(SQLucky.class);
 
 	private static boolean preloaderStatus = false;
@@ -66,28 +77,32 @@ public class SQLucky extends Application {
 	}
 
 	static {
-		if (!CommonUtility.isDev()) {
+		if (!CommonUtils.isDev()) {
 			Log4jPrintStream.redirectSystemOut();
 		}
-//		Log4jPrintStream.redirectSystemOut();
 	}
 
 	@Override
 	public void init() throws Exception {
+//		while (beginInit == false) {
+//			Thread.sleep(1000);
+//		}
 		logger.info(ConfigVal.textLogo);
+		transferDB = AppDao.checkTransferDB();
+
 		Connection conn = SqluckyAppDB.getConn();
 
 		// 数据库迁移
 		AppDao.testDbTableExists(conn);
 
 		// 界面主题色， 没有设置过，默认黑色
-		Theme = AppDao.readConfig(conn, "THEME");
+		Theme = SqluckyAppDB.readConfig(conn, "THEME");
 		if (StrUtils.isNullOrEmpty(Theme)) {
-			AppDao.saveConfig(conn, "THEME", "DARK");
+			SqluckyAppDB.saveConfig(conn, "THEME", "DARK");
 			Theme = "DARK";
 		}
 
-		ConfigVal.openfileDir = AppDao.readConfig(conn, "OPEN_FILE_DIR");
+		ConfigVal.openfileDir = SqluckyAppDB.readConfig(conn, "OPEN_FILE_DIR");
 		SqluckyAppDB.closeConn(conn);
 		ConfigVal.THEME = Theme;
 		SqluckyAppComponent sqluckyComponent = new SqluckyAppComponent();
@@ -100,8 +115,7 @@ public class SQLucky extends Application {
 
 		scene = app.getAppScene();
 
-//		SettingKeyBinding.Setting(scene);
-		CommonAction.setTheme(Theme);
+		AppCommonAction.setTheme(Theme);
 		// 加载插件
 		ServiceLoad.callLoad();
 		logger.info("完成初始化");
@@ -132,13 +146,13 @@ public class SQLucky extends Application {
 			primaryStage.centerOnScreen(); // 居中
 //			primaryStage.initStyle(StageStyle.UNDECORATED);//设定窗口无边框
 //		    primaryStage.setIconified(true); //最小化窗口，任务栏可见图标
-			if (CommonUtility.isLinuxOS()) {
+			if (CommonUtils.isLinuxOS()) {
 				MyPreloaderGif.hiden();
 			} else {
 				MyPreloaderMp4.hiden();
 			}
 			// windows 系统, 使用自己的关闭窗口
-			if (!CommonUtility.isMacOS()) {
+			if (!CommonUtils.isMacOS()) {
 				AppWindowReStyleByWinOS winos = new AppWindowReStyleByWinOS();
 				winos.setWindow(primaryStage, app.getHeadAnchorPane());
 			}
@@ -156,7 +170,7 @@ public class SQLucky extends Application {
 
 			// 在stage show之后 需要初始化的内容, 如: 外观, 事件
 			Platform.runLater(() -> {
-				if (CommonUtility.isLinuxOS()) {
+				if (CommonUtils.isLinuxOS()) {
 //					primaryStage.setAlwaysOnTop(true);
 					primaryStage.toFront();
 				}
@@ -164,10 +178,6 @@ public class SQLucky extends Application {
 					primaryStage.toFront();
 				}
 				primaryStage.toFront();
-//				primaryStage.setMaximized(true);
-//				primaryStage.setResizable(true);
-//				 primaryStage.setX(500); 
-//				 primaryStage.setY(500);
 				Rectangle2D primaryScreenBounds = Screen.getPrimary().getVisualBounds();
 				primaryStage.setX(primaryScreenBounds.getMinX());
 				primaryStage.setY(primaryScreenBounds.getMinY());
@@ -179,7 +189,8 @@ public class SQLucky extends Application {
 				Node tabHeader = mainTabPane.lookup(".tab-header-area");
 				tabHeader.setOnMouseClicked(mouseEvent -> {
 					if (mouseEvent.getClickCount() == 2) {
-						MyAreaTab.addCodeEmptyTabMethod();
+//						MyAreaTab.addCodeEmptyTabMethod();
+						MyEditorSheetHelper.addEmptyHighLightingEditor();
 					}
 				});
 
@@ -198,18 +209,50 @@ public class SQLucky extends Application {
 
 			};
 			// 执行页面初始化好只会要执行的任务
-			CommonUtility.executeInitTask(cr);
+			CommonUtils.executeInitTask(cr);
 			Long mm = Runtime.getRuntime().maxMemory() / 1024;
 			mm = mm / 1024;
 			logger.info("Runtime.getRuntime().maxMemory = " + mm);
-//			Platform.runLater(()->{
-//				Rectangle2D primaryScreenBounds = Screen.getPrimary().getVisualBounds();
-//				primaryStage.setX(primaryScreenBounds.getMinX());
-//				primaryStage.setY(primaryScreenBounds.getMinY());
-//				primaryStage.setWidth(primaryScreenBounds.getWidth());
-//				primaryStage.setHeight(primaryScreenBounds.getHeight());
-//			});
+			SettingKeyBinding.setEscKeyBinding(scene);
 
+			// 数据迁移
+			if (transferDB) {
+				// 如果发现有新的数据库, 插入
+				Optional<File> oldFile = AppDao.appOldDbFiles();
+				if (oldFile.isPresent()) {
+					Platform.runLater(() -> {
+						boolean tf = MyAlert.myConfirmationShowAndWait("发现旧版本数据, 是否迁移");
+						if (tf) {
+							// 数据库迁移
+							LoadingAnimation.primarySceneRootLoadingAnimation("Migrating", v -> {
+								boolean succeed = false;
+								File file = oldFile.get();
+								try {
+									AppDao.transferOldDbData(file);
+									succeed = true;
+									// 成功后归档原数据库
+									String ftmpName = file.getName();
+									String archiveName = ftmpName.replace("_sqlite", "_archive");
+									File renameFile = new File(file.getParent(), archiveName);
+									file.renameTo(renameFile);
+								} catch (Exception e) {
+									e.printStackTrace();
+									MyAlert.errorAlert("迁移出错了!");
+								}
+
+								if (succeed) {
+									Platform.runLater(() -> {
+										MyAlert.myConfirmation("完成迁移, 重启APP, 加载迁移数据, ok ? ", x -> Restart.reboot(),
+												System.out::println);
+									});
+								}
+							});
+
+						}
+					});
+				}
+
+			}
 		} catch (Exception e) {
 			e.printStackTrace();
 		} finally {
@@ -217,6 +260,66 @@ public class SQLucky extends Application {
 		}
 
 	}
+	// 保存app状态
+		public static void saveApplicationStatusInfo() {
+			Connection H2conn = SqluckyAppDB.getConn();
+			try {
+				ConnectionDao.refreshConnOrder();
+				TabPane mainTabPane = ComponentGetter.mainTabPane;
+				int activateTabPane = mainTabPane.getSelectionModel().getSelectedIndex();
+				var alltabs = mainTabPane.getTabs();
+				for (int i = 0; i < alltabs.size(); i++) {
+					Tab tab = alltabs.get(i);
+					// TODO close save
+					MyEditorSheet mtab = (MyEditorSheet) tab.getUserData();
+					mtab.saveScriptPo(H2conn);
+					var spo = mtab.getDocumentPo();
+					// 将打开状态设置为1, 之后根据这个状态来恢复
+					if (spo != null && spo.getId() != null) {
+						String sql = mtab.getAreaText();
+						if (StrUtils.isNotNullOrEmpty(sql) && sql.trim().length() > 0) {
+							spo.setOpenStatus(1);
+							// 当前激活的编辑页面
+							if (activateTabPane == i) {
+								spo.setIsActivate(1);
+							} else {
+								spo.setIsActivate(0);
+							}
+						} else {
+							spo.setOpenStatus(0);
+							spo.setIsActivate(0);
+						}
+					}
+				}
+
+				// 删除 script tree view 中的空内容tab
+				var childs = ScriptTabTree.ScriptTreeView.getRoot().getChildren();
+				int idx = 1;
+				for (int i = 0; i < childs.size(); i++) {
+					var tv = childs.get(i);
+					var mytab = tv.getValue();
+					var scpo = mytab.getDocumentPo();
+					var sqltxt = scpo.getText();
+					if (sqltxt == null || sqltxt.trim().length() == 0) {
+						AppDao.deleteScriptArchive(H2conn, scpo);
+					} else {
+						String fp = scpo.getFileFullName();
+						if (StrUtils.isNullOrEmpty(fp)) {
+							scpo.setTitle("Untitled_" + idx + "*");
+							idx++;
+						}
+						AppDao.updateScriptArchive(H2conn, scpo);
+
+					}
+				}
+
+			} catch (Exception e) {
+				e.printStackTrace();
+			} finally {
+				SqluckyAppDB.closeConn(H2conn);
+			}
+
+		}
 
 	public static void main(String[] args) throws IOException {
 		logger.debug("main.args ==  " + Arrays.toString(args));
@@ -250,7 +353,7 @@ public class SQLucky extends Application {
 //		var val =System.getProperty("jdk.module.main");
 //		logger.debug("jdk.module.path ==  "+ Arrays.toString(val.split(":")));
 
-		if (CommonUtility.isLinuxOS()) {
+		if (CommonUtils.isLinuxOS()) {
 			LauncherImpl.launchApplication(SQLucky.class, MyPreloaderGif.class, args);
 		} else {
 			LauncherImpl.launchApplication(SQLucky.class, MyPreloaderMp4.class, args);

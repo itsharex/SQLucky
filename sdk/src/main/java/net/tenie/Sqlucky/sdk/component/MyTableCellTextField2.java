@@ -19,7 +19,7 @@ import javafx.util.Callback;
 import javafx.util.StringConverter;
 import javafx.util.converter.DefaultStringConverter;
 import net.tenie.Sqlucky.sdk.db.ResultSetRowPo;
-import net.tenie.Sqlucky.sdk.utility.CommonUtility;
+import net.tenie.Sqlucky.sdk.utility.CommonUtils;
 
 public class MyTableCellTextField2<S, T> extends TextFieldTableCell<S, T> {
     
@@ -47,29 +47,43 @@ public class MyTableCellTextField2<S, T> extends TextFieldTableCell<S, T> {
     private void initMenu(StringConverter<T> converter) {
     	// 右键菜单
         ContextMenu cm = new ContextMenu();
-        // 设置null
-        MenuItem setNull = new MenuItem("Set Null ");
-        setNull.setOnAction(e->{
-        	commitEdit(converter.fromString("<null>"));
-        });
+        TableColumn<S, T> column = getTableColumn();
+       if( column.isEditable() ) {
+    	   // 设置null
+           MenuItem setNull = new MenuItem("Set Null ");
+           setNull.setOnAction(e->{
+           	commitEdit(converter.fromString("<null>"));
+           });
+           cm.getItems().add( setNull);
+       }
+      
 		
         // 复制值
         MenuItem copyVal = new MenuItem("Copy Value");
         copyVal.setOnAction(e->{
         	String val =  this.getText();
-        	CommonUtility.setClipboardVal(val);
+        	CommonUtils.setClipboardVal(val);
         });
         
-        cm.getItems().addAll(copyVal, setNull);
-        setContextMenu(cm);
+        cm.getItems().add(copyVal);
+        this.setContextMenu(cm);
     }
+    
+    
     public MyTableCellTextField2(StringConverter<T> converter) {
         super(converter); 
-        initMenu(converter);
+//        initMenu(converter);
         
         // 在表格cell中, 显示不下就以省略号结尾
         this.setTextOverrun(OverrunStyle.ELLIPSIS);
-       
+        // 当鼠标点击的时候添加右键菜单
+        this.setOnMouseClicked(e->{
+        	var cmenu =  this.getContextMenu();
+        	if(cmenu == null) {
+        		  initMenu(converter);
+        	}
+        });
+        
         graphicProperty().addListener(new InvalidationListener() {
             @Override
             public void invalidated(Observable observable) {
@@ -172,9 +186,8 @@ public class MyTableCellTextField2<S, T> extends TextFieldTableCell<S, T> {
     		// 如果是手动添加的行, 那么对应的单元格变色
         	TableRow<S> tr = getTableRow();
         	S v = tr.getItem();
-        	if(v instanceof ResultSetRowPo) {
-        		Boolean isNewAdd = ((ResultSetRowPo) v).getIsNewAdd();
-        		if(isNewAdd) {
+        	if(v instanceof ResultSetRowPo isNewAdd) {
+        		if(isNewAdd.getIsNewAdd()) {
         			setCellColorForNewOrChange();
         		}
         	}

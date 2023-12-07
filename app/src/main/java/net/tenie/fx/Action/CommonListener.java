@@ -5,13 +5,13 @@ import javafx.beans.value.ObservableValue;
 import javafx.scene.control.IndexRange;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
-import net.tenie.Sqlucky.sdk.component.SqluckyEditor;
+import net.tenie.Sqlucky.sdk.component.MyEditorSheetHelper;
 import net.tenie.Sqlucky.sdk.config.ConfigVal;
+import net.tenie.Sqlucky.sdk.db.DBConns;
 import net.tenie.Sqlucky.sdk.db.SqluckyConnector;
-import net.tenie.Sqlucky.sdk.utility.CommonUtility;
+import net.tenie.Sqlucky.sdk.utility.AppCommonAction;
+import net.tenie.Sqlucky.sdk.utility.CommonUtils;
 import net.tenie.Sqlucky.sdk.utility.StrUtils;
-import net.tenie.fx.config.DBConns;
-import net.tenie.fx.config.MainTabs;
 import net.tenie.fx.window.ConnectionEditor;
 
 /**
@@ -65,17 +65,6 @@ public class CommonListener {
 		};
 	}
 
-// ChoiceBox change 
-	@SuppressWarnings("rawtypes")
-	public static ChangeListener choiceBoxChange() {
-		return new ChangeListener() {
-			@Override
-			public void changed(ObservableValue observable, Object oldValue, Object newValue) {
-				// 给代码页面 设置 对应的连接名称, 切换代码页的时候可以自动转换链接
-				MainTabs.setBoxIdx(CommonUtility.tabText(MainTabs.getActTab()), newValue.toString());
-			}
-		};
-	}
 
 	// 选择框选择连接时, 如果未连接, 进行连接
 	public static ChangeListener<Label> choiceBoxChange2() {
@@ -86,11 +75,11 @@ public class CommonListener {
 					SqluckyConnector cnnpo = DBConns.get(newValue.getText());
 					if (cnnpo != null && !cnnpo.isAlive()) {
 						// 清除查找字符串
-						IndexRange ir = SqluckyEditor.getSelection();
-						CommonAction.pressBtnESC();
-						CommonAction.shrinkTreeView();
+						IndexRange ir = MyEditorSheetHelper.getSelection();
+						CommonUtils.pressBtnESC();
+						AppCommonAction.shrinkTreeView();
 						ConnectionEditor.openConn(cnnpo.getConnName());
-						SqluckyEditor.selectRange(ir);
+						MyEditorSheetHelper.selectRange(ir);
 					}
 				}
 

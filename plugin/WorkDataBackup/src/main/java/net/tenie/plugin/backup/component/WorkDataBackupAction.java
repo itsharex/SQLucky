@@ -12,21 +12,21 @@ import javafx.scene.control.Button;
 import javafx.scene.control.TextField;
 import javafx.scene.control.TreeItem;
 import net.tenie.Sqlucky.sdk.AppComponent;
-import net.tenie.Sqlucky.sdk.SqluckyTab;
 import net.tenie.Sqlucky.sdk.component.ComponentGetter;
+import net.tenie.Sqlucky.sdk.component.MyEditorSheet;
 import net.tenie.Sqlucky.sdk.config.ConfigVal;
+import net.tenie.Sqlucky.sdk.db.DBTools;
 import net.tenie.Sqlucky.sdk.db.SqluckyAppDB;
 import net.tenie.Sqlucky.sdk.db.SqluckyConnector;
 import net.tenie.Sqlucky.sdk.po.DBConnectorInfoPo;
 import net.tenie.Sqlucky.sdk.po.DocumentPo;
 import net.tenie.Sqlucky.sdk.subwindow.MyAlert;
-import net.tenie.Sqlucky.sdk.utility.CommonUtility;
-import net.tenie.Sqlucky.sdk.utility.DBTools;
+import net.tenie.Sqlucky.sdk.utility.CommonUtils;
 import net.tenie.Sqlucky.sdk.utility.DesUtil;
 import net.tenie.Sqlucky.sdk.utility.FileTools;
 import net.tenie.Sqlucky.sdk.utility.JsonTools;
 import net.tenie.Sqlucky.sdk.utility.StrUtils;
-import net.tenie.Sqlucky.sdk.utility.ZipUtil;
+import net.tenie.Sqlucky.sdk.utility.ZipUtils;
 import net.tenie.Sqlucky.sdk.utility.net.HttpUtil;
 import net.tenie.plugin.backup.po.BackupInfoPO;
 
@@ -116,7 +116,7 @@ public class WorkDataBackupAction {
 
 			diskPath = new File(saveDir, backupName + ".zip");
 
-			ZipUtil.ZipDirectory(saveBakDir, diskPath.getAbsolutePath());
+			ZipUtils.ZipDirectory(saveBakDir, diskPath.getAbsolutePath());
 
 			// 上传 zip
 			var map = postParam(backupName, type, usePrivateKey);
@@ -181,8 +181,8 @@ public class WorkDataBackupAction {
 
 	// 备份脚本
 	public static int backupScript(String tmpDir, String pKey, String backuptype, boolean isvip) {
-		TreeItem<SqluckyTab> root = ComponentGetter.scriptTreeRoot;
-		ObservableList<TreeItem<SqluckyTab>> ls = root.getChildren();
+		TreeItem<MyEditorSheet> root = ComponentGetter.scriptTreeRoot;
+		ObservableList<TreeItem<MyEditorSheet>> ls = root.getChildren();
 		List<String> vals = new ArrayList<>();
 		var conn = SqluckyAppDB.getConn();
 		int i = 0;
@@ -190,7 +190,7 @@ public class WorkDataBackupAction {
 
 			for (i = 0; i < ls.size(); i++) {
 				var item = ls.get(i);
-				SqluckyTab stab = item.getValue();
+				MyEditorSheet stab = item.getValue();
 				stab.syncScriptPo(conn);
 				DocumentPo tmp = item.getValue().getDocumentPo();
 				String jsonStr = tmp.toJsone();
@@ -289,7 +289,7 @@ public class WorkDataBackupAction {
 		String saveDir = localSaveDir();
 		File uzipDir = new File(saveDir, "unzipdir");
 		try {
-			ZipUtil.UnzipFile(bakZipFile.getAbsolutePath(), uzipDir.getAbsolutePath());
+			ZipUtils.UnzipFile(bakZipFile.getAbsolutePath(), uzipDir.getAbsolutePath());
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -359,7 +359,7 @@ public class WorkDataBackupAction {
 			Map<String, File> allFile, boolean dbInfo, boolean script) {
 		try {
 			// 登入校验
-			if (CommonUtility.isLogin("Use Backup must Login") == false) {
+			if (CommonUtils.isLogin("Use Backup must Login") == false) {
 				return;
 			}
 			// 密钥检查
@@ -434,7 +434,7 @@ public class WorkDataBackupAction {
 			Map<String, File> allFile, boolean dbInfo, boolean script) {
 		try {
 			// 登入校验
-			if (CommonUtility.isLogin("Use Backup must Login") == false) {
+			if (CommonUtils.isLogin("Use Backup must Login") == false) {
 				return;
 			}
 			// 密钥检查

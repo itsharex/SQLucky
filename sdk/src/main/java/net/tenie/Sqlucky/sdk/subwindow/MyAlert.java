@@ -25,11 +25,11 @@ import javafx.stage.Modality;
 import javafx.stage.Stage;
 import javafx.util.Duration;
 import net.tenie.Sqlucky.sdk.component.ComponentGetter;
-import net.tenie.Sqlucky.sdk.component.MyTextArea;
+import net.tenie.Sqlucky.sdk.component.MyTextEditor;
 import net.tenie.Sqlucky.sdk.config.CommonConst;
 import net.tenie.Sqlucky.sdk.config.ConfigVal;
 import net.tenie.Sqlucky.sdk.ui.IconGenerator;
-import net.tenie.Sqlucky.sdk.utility.CommonUtility;
+import net.tenie.Sqlucky.sdk.utility.CommonUtils;
 
 public class MyAlert {
 	/**
@@ -197,7 +197,7 @@ public class MyAlert {
 		// 内容设置
 		Label question = new Label(promptInfo);
 		// code
-		MyTextArea myTextArea = new MyTextArea();
+		MyTextEditor myTextArea = new MyTextEditor();
 		StackPane codeAreaPane = myTextArea.getCodeAreaPane(code, false);
 		codeAreaPane.setStyle("-fx-background-color: transparent;");
 
@@ -247,12 +247,12 @@ public class MyAlert {
 	}
 
 	public static void myConfirmation(String promptInfo, Stage stage, List<Node> btns, boolean isWait) {
-		Label space = new Label("");
-		Label tit = new Label(promptInfo);
+		MyTextEditor myTextArea = new MyTextEditor();
+		StackPane codeAreaPane = myTextArea.getCodeAreaPane(promptInfo, false);
+		codeAreaPane.setStyle("-fx-background-color: transparent;");
 
 		List<Node> nds = new ArrayList<>();
-		nds.add(space);
-		nds.add(tit);
+		nds.add(codeAreaPane);
 
 		Node vb = DialogTools.setVboxShape(stage, ComponentGetter.INFO, nds, btns);
 		Scene scene = new Scene((Parent) vb);
@@ -269,8 +269,8 @@ public class MyAlert {
 		KeyCodeCombination kcN = new KeyCodeCombination(KeyCode.N);
 		KeyCodeCombination kcC = new KeyCodeCombination(KeyCode.C);
 		for (var nd : btns) {
-			if (nd instanceof Button) {
-				Button tmp = (Button) nd;
+			if (nd instanceof Button tmp) {
+//				Button tmp = (Button) nd;
 				if (tmp.getText().contains("(Y)")) {
 					scene.getAccelerators().put(kcY, () -> {
 						tmp.fire();
@@ -371,7 +371,7 @@ public class MyAlert {
 		Platform.runLater(() -> {
 			Label titleLabel = new Label(title);
 			titleLabel.setGraphic(IconGenerator.svgImage("info-circle", "#7CFC00"));
-			MyTextArea myTextArea = new MyTextArea();
+			MyTextEditor myTextArea = new MyTextEditor();
 			StackPane codeAreaPane = myTextArea.getCodeAreaPane(text, false);
 			codeAreaPane.setStyle("-fx-background-color: transparent;");
 
@@ -389,7 +389,7 @@ public class MyAlert {
 			JFXButton copyText = new JFXButton("Copy");
 			copyText.getStyleClass().add("myAlertBtn");
 			copyText.setOnAction(value -> {
-				CommonUtility.setClipboardVal(text);
+				CommonUtils.setClipboardVal(text);
 //					stage.close();
 			});
 

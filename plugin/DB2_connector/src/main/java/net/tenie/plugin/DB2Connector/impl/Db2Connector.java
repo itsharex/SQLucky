@@ -8,11 +8,11 @@ import java.util.HashMap;
 import java.util.Map;
 
 import net.tenie.Sqlucky.sdk.db.DbConnector;
+import net.tenie.Sqlucky.sdk.db.Dbinfo;
 import net.tenie.Sqlucky.sdk.db.SqluckyConnector;
 import net.tenie.Sqlucky.sdk.db.SqluckyDbRegister;
 import net.tenie.Sqlucky.sdk.po.DBConnectorInfoPo;
 import net.tenie.Sqlucky.sdk.po.DbSchemaPo;
-import net.tenie.Sqlucky.sdk.utility.Dbinfo;
 import net.tenie.Sqlucky.sdk.utility.StrUtils;
 
 
@@ -86,7 +86,6 @@ public class Db2Connector extends DbConnector {
 			while (rs.next()) {
 				DbSchemaPo po = new DbSchemaPo();
 				String schema = rs.getString(1);
-//				logger.info("fetchSchemasInfo(); schema=" + schema);
 				po.setSchemaName(schema);
 				pos.put(schema, po);
 			}

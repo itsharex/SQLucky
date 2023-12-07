@@ -7,7 +7,7 @@ import java.util.List;
 
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleStringProperty;
-import net.tenie.Sqlucky.sdk.utility.CommonUtility;
+import net.tenie.Sqlucky.sdk.utility.CommonUtils;
 
 /*   @author tenie */
 public class ConfigVal {
@@ -48,7 +48,7 @@ public class ConfigVal {
 	// 代码显示个数计数
 	public static int pageSize = -1;
 	// sql 查询获取最大行
-	public static int MaxRows = 100;
+	public static int MaxRows = 1000;
 
 	// sql txt area tag
 	public static String SQL_AREA_TAG = "code";
@@ -102,7 +102,7 @@ public class ConfigVal {
 		if (SQLUCKY_URL_CUSTOM != null && !"".equals(SQLUCKY_URL_CUSTOM)) {
 			return SQLUCKY_URL_CUSTOM;
 		}
-		if (CommonUtility.isDev()) {
+		if (CommonUtils.isDev()) {
 			tmp = SQLUCKY_URL_DEV;
 		} else {
 			tmp = SQLUCKY_URL;

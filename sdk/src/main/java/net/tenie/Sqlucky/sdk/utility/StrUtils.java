@@ -16,6 +16,8 @@ import java.util.regex.Pattern;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import javafx.beans.property.StringProperty;
+
 //import net.tenie.fx.PropertyPo.DbConnectionPo;
 //import net.tenie.fx.PropertyPo.MyRange;
 //import net.tenie.Sqlucky.sdk.config.ConfigVal;
@@ -31,14 +33,6 @@ public class StrUtils {
 	public final static String BLANK_SPRING_STRING = " ";
 	public static final char CHAR_TILDE = '~';
 
-	public static void testStrsToInts() {
-		List<String> ls = new ArrayList<>();
-		ls.add("10");
-		ls.add("5");
-		ls.add("15");
-		List<Integer> rs = StrUtils.StrListToIntList(ls);
-		System.out.println(rs);
-	}
 
 	// 字符串list 排序
 	public static List<Integer> StrListToIntList(List<String> ls) {
@@ -83,10 +77,6 @@ public class StrUtils {
 
 		return rsset;
 	}
-//	public static void main(String[] args) {
-//		String  str = " sss bbb ccc 11asda dsad.ads";
-//		splitWordByStr(str);
-//	}
 
 	// 驼峰命名转下划线
 	public static String CamelCaseUnderline(String str) {
@@ -297,9 +287,19 @@ public class StrUtils {
 
 		return rs;
 	}
+	
+	// 生成一定长度的空白字符串
+	public static String createBlank(int len) {
+		StringBuilder strb = new StringBuilder("");
+		for(int i= 0; i< len ; i++) {
+			strb.append(" ");
+		}
+		return strb.toString();
+	}
 
 	// 去除注释
 	public static String trimComment(String sql, String symbol) {
+		if(!sql.contains(symbol)) return sql;
 		String str = sql.replaceAll(symbol, "\n" + symbol);
 		if (str.contains("\r")) {
 			str = str.replace("\r", "");
@@ -312,6 +312,8 @@ public class StrUtils {
 				String temp = sa[i];
 				if (!beginWith(temp, symbol)) {
 					nstr += temp + "\n";
+				}else {
+					nstr += createBlank(temp.length());
 				}
 			}
 		}
@@ -358,18 +360,27 @@ public class StrUtils {
 	/**
 	 * check if null or empty string
 	 */
-	public static boolean isNullOrEmpty(Object obj) {
+	public static boolean isNullOrEmpty(String obj) {
 		return (null == obj || EMPTY_STRING.equals(obj));
 	}
 
-	public static boolean isNotNullOrEmpty(Object obj) {
+	public static boolean isNotNullOrEmpty(String obj) {
+		return (!isNullOrEmpty(obj));
+	}
+
+	public static boolean isNullOrEmpty(StringProperty obj) {
+
+		return (null == obj || isNullOrEmpty(obj.getValue()));
+	}
+
+	public static boolean isNotNullOrEmpty(StringProperty obj) {
 		return (!isNullOrEmpty(obj));
 	}
 
 	/**
 	 * 检查是否相等
 	 */
-	public static boolean isEquals(Object obj, String expectValue) {
+	public static boolean isEquals(String obj, String expectValue) {
 		if (isNullOrEmpty(obj) || isNullOrEmpty(expectValue)) {
 			return false;
 		}
@@ -379,7 +390,7 @@ public class StrUtils {
 	/**
 	 * 检查是否相等（忽略大小写）
 	 */
-	public static boolean isEqualsNoCasetive(Object obj, String expectValue) {
+	public static boolean isEqualsNoCasetive(String obj, String expectValue) {
 		if (isNullOrEmpty(obj) || isNullOrEmpty(expectValue)) {
 			return false;
 		}
@@ -593,6 +604,95 @@ public class StrUtils {
 
 		}
 		return rtVal;
+	}
+
+	public static String Html2Text(String inputString) {
+		if (inputString == null) {
+			return "";
+		}
+
+		// 含html标签的字符串
+		String htmlStr = inputString.trim();
+		String textStr = "";
+		Pattern p_script;
+		Matcher m_script;
+		Pattern p_style;
+		Matcher m_style;
+		Pattern p_html;
+		Matcher m_html;
+		Pattern p_space;
+		Matcher m_space;
+		Pattern p_escape;
+		Matcher m_escape;
+
+		try {
+			// 定义script的正则表达式{或<script[^>]*?>[\\s\\S]*?<\\/script>
+			String regEx_script = "<[\\s]*?script[^>]*?>[\\s\\S]*?<[\\s]*?\\/[\\s]*?script[\\s]*?>";
+
+			// 定义style的正则表达式{或<style[^>]*?>[\\s\\S]*?<\\/style>
+			String regEx_style = "<[\\s]*?style[^>]*?>[\\s\\S]*?<[\\s]*?\\/[\\s]*?style[\\s]*?>";
+
+			// 定义HTML标签的正则表达式
+			String regEx_html = "<[^>]+>";
+
+			// 定义空格回车换行符
+			String regEx_space = "\\s*|\t|\r|\n";
+
+			// 定义转义字符
+			String regEx_escape = "&.{2,6}?;";
+
+			// 过滤script标签
+			p_script = Pattern.compile(regEx_script, Pattern.CASE_INSENSITIVE);
+			m_script = p_script.matcher(htmlStr);
+			htmlStr = m_script.replaceAll("");
+
+			// 过滤style标签
+			p_style = Pattern.compile(regEx_style, Pattern.CASE_INSENSITIVE);
+			m_style = p_style.matcher(htmlStr);
+			htmlStr = m_style.replaceAll("");
+
+			// 过滤html标签
+			p_html = Pattern.compile(regEx_html, Pattern.CASE_INSENSITIVE);
+			m_html = p_html.matcher(htmlStr);
+			htmlStr = m_html.replaceAll("");
+
+//		            // 过滤空格回车标签
+//		            p_space = Pattern.compile(regEx_space, Pattern.CASE_INSENSITIVE);
+//		            m_space = p_space.matcher(htmlStr);
+//		            htmlStr = m_space.replaceAll("");
+//
+//		            // 过滤转义字符
+//		            p_escape = Pattern.compile(regEx_escape, Pattern.CASE_INSENSITIVE);
+//		            m_escape = p_escape.matcher(htmlStr);
+//		            htmlStr = m_escape.replaceAll("");
+
+			textStr = htmlStr;
+
+		} catch (Exception e) {
+			logger.info("Html2Text:{}", e.getMessage());
+		}
+
+		// 返回文本字符串
+		return textStr;
+	}
+
+	/**
+	 * 删除所有的HTML标签
+	 *
+	 * @param source 需要进行除HTML的文本
+	 * @return
+	 */
+	public static String deleteAllHTMLTag(String source) {
+		if (source == null) {
+			return "";
+		}
+
+		String s = source;
+		/** 删除普通标签 */
+		s = s.replaceAll("<(S*?)[^>]*>.*?|<.*? />", "");
+		/** 删除转义字符 */
+		s = s.replaceAll("&.{2,6}?;", "");
+		return s;
 	}
 
 }

@@ -3,11 +3,12 @@ package net.tenie.fx.main;
 import java.io.File;
 import java.io.IOException;
 import java.lang.management.ManagementFactory;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import net.tenie.Sqlucky.sdk.subwindow.MyAlert;
-import net.tenie.Sqlucky.sdk.utility.CommonUtility;
+import net.tenie.Sqlucky.sdk.utility.CommonUtils;
 import net.tenie.Sqlucky.sdk.utility.StrUtils;
 
 public class Restart {	
@@ -15,7 +16,7 @@ public class Restart {
 	// 重启应用
 	public static void reboot(){
 		try {
-			String SqluckyAppPath = CommonUtility.sqluckyAppPath();
+			String SqluckyAppPath = CommonUtils.sqluckyAppPath();
 			if(SqluckyAppPath != null && !"".equals(SqluckyAppPath)) {
 				execCmdAndExit(SqluckyAppPath);
 				runDev();
@@ -32,7 +33,7 @@ public class Restart {
 	
 	private static void execCmdAndExit(String cmd) throws IOException {
 		if(StrUtils.isNotNullOrEmpty(cmd)) {
-			if ( CommonUtility.checkFileExist(cmd) ) {
+			if ( CommonUtils.checkFileExist(cmd) ) {
 				Runtime.getRuntime().exec(cmd); 
 				logger.info(" 执行 app  " +cmd);
 				System.exit(0);
@@ -64,14 +65,5 @@ public class Restart {
 		
 		System.exit(0);
 	}
-	
-//	public static void main(String[] args) {
-//		String ops = System.getProperty("os.name");
-//		String userDir = System.getProperty("user.dir");
-//		String val =System.getProperty("sun.java.command");
-//		System.out.println(ops);
-//		System.out.println(userDir);
-//		System.out.println(val);
-//	}
 	
 }

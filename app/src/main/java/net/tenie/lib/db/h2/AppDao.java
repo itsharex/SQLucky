@@ -2,8 +2,9 @@ package net.tenie.lib.db.h2;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.URI;
-import java.net.URISyntaxException;
+import java.io.InputStream;
+import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.PreparedStatement;
@@ -12,25 +13,21 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.IOUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import javafx.collections.ObservableList;
 import net.tenie.Sqlucky.sdk.config.ConfigVal;
-import net.tenie.Sqlucky.sdk.db.ResultSetCellPo;
-import net.tenie.Sqlucky.sdk.db.ResultSetPo;
-import net.tenie.Sqlucky.sdk.db.ResultSetRowPo;
-import net.tenie.Sqlucky.sdk.db.SelectDao;
+import net.tenie.Sqlucky.sdk.db.DBTools;
 import net.tenie.Sqlucky.sdk.db.SqluckyAppDB;
 import net.tenie.Sqlucky.sdk.db.SqluckyConnector;
 import net.tenie.Sqlucky.sdk.po.DocumentPo;
-import net.tenie.Sqlucky.sdk.po.SheetDataValue;
-import net.tenie.Sqlucky.sdk.utility.CommonUtility;
-import net.tenie.Sqlucky.sdk.utility.DBTools;
+import net.tenie.Sqlucky.sdk.utility.CommonUtils;
 import net.tenie.Sqlucky.sdk.utility.StrUtils;
-import net.tenie.fx.dao.InsertDao;
+import net.tenie.Sqlucky.sdk.utility.TransferDataUtils;
 
 /**
  * 
@@ -136,15 +133,15 @@ public class AppDao {
 			"  `CREATED_TIME` DATETIME ,\n" + "  `UPDATED_TIME` DATETIME " + ") ";
 
 	public static String readSqlFile(String path) {
-		URI fileUri;
 		String sql = "";
 		try {
-			fileUri = AppDao.class.getResource(path).toURI();
-			File targetFile = new File(fileUri);
+			URL url = AppDao.class.getResource(path);
+			InputStream is = url.openStream();
 
-			sql = FileUtils.readFileToString(targetFile, "UTF-8");
-		} catch (URISyntaxException | IOException e) {
+			sql = IOUtils.toString(is, StandardCharsets.UTF_8.name());
+			logger.debug(" sql = " + sql.toString());
 
+		} catch (IOException e) {
 			e.printStackTrace();
 		}
 
@@ -165,21 +162,20 @@ public class AppDao {
 			}
 		}
 	}
-	
-	public static String macKeyChange(String sqlStr ) {
-		 
-			if(sqlStr.contains("Ctrl ")) {
-				sqlStr = sqlStr.replaceAll("Ctrl ", "⌘ ");
-			}
-			if(sqlStr.contains("Alt ")) {
-				sqlStr = sqlStr.replace("Alt ", "⌥ " );
-			}
 
-			if(sqlStr.contains("Shift ")) {
-				sqlStr = sqlStr.replace("Shift " , "⇧ " );
-			}
-			 
-		 
+	public static String macKeyChange(String sqlStr) {
+
+		if (sqlStr.contains("Ctrl ")) {
+			sqlStr = sqlStr.replaceAll("Ctrl ", "⌘ ");
+		}
+		if (sqlStr.contains("Alt ")) {
+			sqlStr = sqlStr.replace("Alt ", "⌥ ");
+		}
+
+		if (sqlStr.contains("Shift ")) {
+			sqlStr = sqlStr.replace("Shift ", "⇧ ");
+		}
+
 		return sqlStr;
 	}
 
@@ -189,7 +185,7 @@ public class AppDao {
 			String sql = readSqlFile("/db/app.sql");
 			execSqlFileString(conn, sql.trim());
 			sql = readSqlFile("/db/keysBinding.sql");
-			if(CommonUtility.isMacOS()) {
+			if (CommonUtils.isMacOS()) {
 				sql = macKeyChange(sql);
 			}
 			execSqlFileString(conn, sql);
@@ -311,29 +307,10 @@ public class AppDao {
 
 	}
 
-	public static String readConfig(Connection conn, String name) {
-		String sql = "select   VAL   from   APP_CONFIG   where name = '" + name + "' ";
-		String vals = DBTools.selectOne(conn, sql);
-		return vals;
-	}
 
-	public static void deleteConfigKey(Connection conn, String key) {
-		try {
-			DBTools.execDDL(conn, "DELETE from APP_CONFIG where name = '" + key + "' ");
-		} catch (SQLException e) {
-			e.printStackTrace();
-		}
-	}
+	 
 
-	public static void saveConfig(Connection conn, String key, String val) {
-		deleteConfigKey(conn, key);
-		String sql = "insert into APP_CONFIG (NAME, VAL) values ( '" + key + "' , '" + val + "' )";
-		try {
-			DBTools.execDML(conn, sql);
-		} catch (SQLException e) {
-			e.printStackTrace();
-		}
-	}
+	 
 
 	public static void delScriptPo(Integer id) {
 		String sql = "delete   from   SCRIPT_ARCHIVE  where id = " + id;
@@ -355,7 +332,7 @@ public class AppDao {
 		ResultSet rs = null;
 		try {
 			sm = conn.createStatement();
-			logger.info("执行   " + sql);
+//			logger.info("执行   " + sql);
 			rs = sm.executeQuery(sql);
 			while (rs.next()) {
 				DocumentPo po = new DocumentPo();
@@ -384,18 +361,28 @@ public class AppDao {
 		return vals;
 	}
 
+	// 判断表是否存在
 	public static void testDbTableExists(Connection conn) {
 		// 第一次启动
-		if (!tabExist(conn, "KEYS_BINDING")) {
+		if (!tabExist(conn, "IMPORT_FIELD_MAP_DETAIL")) {
 			AppDao.createTab(conn);
-			// 数据库迁移
-			transferOldDbData(conn);
+
 		} else {// 之后的启动, 更新脚本
 //			UpdateScript.execUpdate(conn);
-
 		}
-
 	}
+
+//	public static void testDbTableExists() {
+//		Connection conn = SqluckyAppDB.getConn();
+//		try {
+//			testDbTableExists(conn);
+//		} catch (Exception e) {
+//			e.printStackTrace();
+//		} finally {
+//			SqluckyAppDB.closeConn(conn);
+//			SQLucky.beginInit = true;
+//		}
+//	}
 
 	// 检查表是否存在
 	public static boolean tabExist(Connection conn, String tablename) {
@@ -412,17 +399,19 @@ public class AppDao {
 
 	}
 
-	// 旧的数据 转移 到新的 表里
-	private static void transferOldDbData(Connection conn) {
-		String path = appOldDbFiles();
-		if (StrUtils.isNotNullOrEmpty(path)) {
+	public static void printLog(String val) {
+		logger.debug(val);
+	}
 
-			SqluckyConnector sqluckyConn = SqluckyAppDB.getSqluckyConnector(ConfigVal.USER, ConfigVal.PASSWD,
-					"jdbc:sqlite:" + path);
-//					SqluckySqliteConnector.createTmpConnector(
-//							ConfigVal.USER,
-//							ConfigVal.PASSWD, 
-//							"jdbc:sqlite:" + path );
+	// 旧的数据 转移 到新的 表里
+	public static void transferOldDbData(File path) throws Exception {
+
+		SqluckyConnector sqluckyConn = null;
+		Connection conn = null;
+		try {
+			conn = SqluckyAppDB.getConn();
+			sqluckyConn = SqluckyAppDB.getSqluckyConnector(ConfigVal.USER, ConfigVal.PASSWD,
+					"jdbc:sqlite:" + path.getAbsolutePath());
 			List<String> tableNames = new ArrayList<>();
 			tableNames.add("CONNECTION_INFO");
 //			tableNames.add("SQL_TEXT_SAVE");
@@ -434,31 +423,24 @@ public class AppDao {
 			tableNames.add("DATA_MODEL_TABLE_FIELDS");
 			tableNames.add("PLUGIN_INFO");
 			tableNames.add("SQLUCKY_USER");
-
 			for (int i = 0; i < tableNames.size(); i++) {
 				String tableName = tableNames.get(i);
-				String sql = "select   *   from  " + tableName;
-				SheetDataValue dvt = new SheetDataValue();
-				dvt.setDbConnection(sqluckyConn);
-				dvt.setSqlStr(sql);
-				dvt.setTabName(tableName);
-				try {
-					ResultSetPo rspo = SelectDao.selectSqlToRS(sql, sqluckyConn);
-					ObservableList<ResultSetRowPo> datas = rspo.getDatas();
-					if (datas != null) {
-						for (ResultSetRowPo resultSetRow : datas) {
-							ObservableList<ResultSetCellPo> cells = resultSetRow.getRowDatas();
-							InsertDao.execInsert(conn, tableName, cells);
-						}
-					}
-
-				} catch (Exception e) {
-					e.printStackTrace();
-				}
+				TransferDataUtils.cleanData(conn, "", tableName, AppDao::printLog);
+				TransferDataUtils.dbTableDataMigration(sqluckyConn.getConn(), conn, tableName, "", "", 100, true,
+						AppDao::printLog);
 
 			}
-			sqluckyConn.closeConn();
 
+		} catch (Exception e) {
+			e.printStackTrace();
+			throw e;
+
+		} finally {
+			if (sqluckyConn != null)
+				sqluckyConn.closeConn();
+			if (conn != null) {
+				SqluckyAppDB.closeConn(conn);
+			}
 		}
 	}
 
@@ -481,21 +463,32 @@ public class AppDao {
 						lastModifiedTime = ltmp;
 						rs = path + flName.substring(0, flName.indexOf(".mv.db"));
 					}
-//					System.out.println(rs);
 				}
 			}
 		}
 		return rs;
 	}
 
+	// 检查是否需要迁移数据, 如果最新版本的数据库已经存在, 就不需要迁移
+	public static boolean checkTransferDB() {
+		File dbFile = new File(SqluckyAppDB.getSqliteFilePath());
+		if (dbFile.exists()) {
+			return false;
+		}
+		return true;
+	}
+
 	// 获取目录下的旧db文件, 从旧文件中找一个最新的
-	private static String appOldDbFiles() {
+	public static Optional<File> appOldDbFiles() {
 		String rs = "";
+		File rsFile = null;
 		String path = DBTools.dbFilePath();
 		File dir = new File(path);
 
 		File[] files = dir.listFiles(name -> {
-			return name.getName().startsWith(ConfigVal.H2_DB_NAME) && name.getName().endsWith("_sqlite.db");
+			String fnm = name.getName();
+			return fnm.startsWith(ConfigVal.H2_DB_NAME) && fnm.endsWith("_sqlite.db")
+					&& (!fnm.startsWith(ConfigVal.H2_DB_NAME + ConfigVal.H2_DB_VERSION));
 		});
 		if (files != null && files.length > 0) {
 			long lastModifiedTime = 0;
@@ -505,18 +498,30 @@ public class AppDao {
 					long ltmp = fl.lastModified();
 					if (ltmp > lastModifiedTime) {
 						lastModifiedTime = ltmp;
-						rs = path + flName;// .substring(0, flName.indexOf("_sqlite.db"));
+						rs = flName;
+						rsFile = new File(path, flName);
 					}
-//					System.out.println(rs);
+				}
+			}
+
+			if (StrUtils.isNotNullOrEmpty(rs)) {
+				for (var ftmp : files) {
+					String ftmpName = ftmp.getName();
+					if (!ftmpName.equals(rs)) {
+						String archiveName = ftmpName.replace("_sqlite", "_archive");
+						File renameFile = new File(path, archiveName);
+						ftmp.renameTo(renameFile);
+					}
 				}
 			}
 		}
-		return rs;
+		Optional<File> rsOF = Optional.ofNullable(rsFile);
+		return rsOF;
 	}
 
 	// 执行更新脚本
 	public static void updateAppSql(Connection conn) {
-		String UPDATE_SQL = AppDao.readConfig(conn, "UPDATE_SQL");
+		String UPDATE_SQL = SqluckyAppDB.readConfig(conn, "UPDATE_SQL");
 		if (UPDATE_SQL != null && UPDATE_SQL.length() > 0) {
 			String[] sql = UPDATE_SQL.split(";");
 			for (String s : sql) {
@@ -529,7 +534,7 @@ public class AppDao {
 					e.printStackTrace();
 				}
 			}
-			AppDao.saveConfig(conn, "UPDATE_SQL", "");
+			SqluckyAppDB.saveConfig(conn, "UPDATE_SQL", "");
 		}
 
 		List<String> ls = updateSQL();

@@ -41,7 +41,7 @@ public class CreateInfoservicePoBean {
     //package and import
     private int impDate = 1;
 
-    private String packName = "com.infoservice.dms.po";
+    private String packName = " ";
 
     //set方法模版
     private String setTemp = "\tpublic void set{0}({1} {2})'{'\n" + "\t\tthis.{2}={2};\n" + "\t}\n";

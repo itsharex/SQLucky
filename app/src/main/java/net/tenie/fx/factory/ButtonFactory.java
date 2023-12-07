@@ -6,21 +6,20 @@ import com.jfoenix.controls.JFXComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.AnchorPane;
-import net.tenie.Sqlucky.sdk.SqluckyBottomSheet;
 import net.tenie.Sqlucky.sdk.component.CommonButtons;
 import net.tenie.Sqlucky.sdk.component.ComponentGetter;
+import net.tenie.Sqlucky.sdk.component.MyEditorSheet;
+import net.tenie.Sqlucky.sdk.component.MyEditorSheetHelper;
 import net.tenie.Sqlucky.sdk.component.MyTooltipTool;
 import net.tenie.Sqlucky.sdk.config.ConfigVal;
+import net.tenie.Sqlucky.sdk.db.DBConns;
 import net.tenie.Sqlucky.sdk.ui.IconGenerator;
-import net.tenie.Sqlucky.sdk.utility.CommonUtility;
+import net.tenie.Sqlucky.sdk.utility.CommonUtils;
 import net.tenie.Sqlucky.sdk.utility.StrUtils;
 import net.tenie.Sqlucky.sdk.utility.TextFieldSetup;
-import net.tenie.fx.Action.CommonAction;
 import net.tenie.fx.Action.CommonEventHandler;
 import net.tenie.fx.Action.CommonListener;
 import net.tenie.fx.Action.RunSQLHelper;
-import net.tenie.fx.config.DBConns;
-import net.tenie.fx.config.MainTabs;
 
 /**
  * 
@@ -37,12 +36,12 @@ public class ButtonFactory {
 		AnchorPane pn = new AnchorPane();
 		JFXButton runbtn = new JFXButton();
 		runbtn.setGraphic(IconGenerator.svgImageDefActive("play"));
-		runbtn.setTooltip(MyTooltipTool.instance("Run SQL")); // (ctrl + Enter)
+		runbtn.setTooltip(MyTooltipTool.instance("Run SQL"));
 		runbtn.setDisable(true);
 
 		JFXButton runLinebtn = new JFXButton();
 		runLinebtn.setGraphic(IconGenerator.svgImageDefActive("step-forward"));
-		runLinebtn.setTooltip(MyTooltipTool.instance("Run SQL Current Line")); // (Alt + R)
+		runLinebtn.setTooltip(MyTooltipTool.instance("Run SQL Current Line"));
 		runLinebtn.setDisable(true);
 
 		// 执行存储过程
@@ -61,17 +60,17 @@ public class ButtonFactory {
 		JFXButton addcodeArea = new JFXButton();
 		addcodeArea.setGraphic(IconGenerator.svgImageDefActive("plus-square"));
 		addcodeArea.setOnMouseClicked(CommonEventHandler.addCodeTab());
-		addcodeArea.setTooltip(MyTooltipTool.instance("Add New Edit Page")); // ctrl + T
+		addcodeArea.setTooltip(MyTooltipTool.instance("Add New Edit Page"));
 
 		JFXButton saveSQL = new JFXButton();
 		saveSQL.setGraphic(IconGenerator.svgImageDefActive("save"));
 		saveSQL.setOnMouseClicked(CommonEventHandler.saveSQl());
-		saveSQL.setTooltip(MyTooltipTool.instance("Save")); // ctrl + S
+		saveSQL.setTooltip(MyTooltipTool.instance("Save"));
 
 		JFXButton formatSQL = new JFXButton();
-		formatSQL.setGraphic(IconGenerator.svgImageDefActive("paragraph")); // i-cursor
+		formatSQL.setGraphic(IconGenerator.svgImageDefActive("paragraph"));
 		formatSQL.setOnMouseClicked(v -> {
-			CommonAction.formatSqlText();
+			CommonUtils.formatSqlText();
 		});
 		formatSQL.setTooltip(MyTooltipTool.instance("Format"));
 
@@ -79,8 +78,8 @@ public class ButtonFactory {
 		JFXButton findSQlTxt = new JFXButton();
 		findSQlTxt.setGraphic(IconGenerator.svgImageDefActive("search"));
 		findSQlTxt.setId("runFunPro");
-		findSQlTxt.setTooltip(MyTooltipTool.instance("Find")); // (Ctrl + F)
-		findSQlTxt.setOnMouseClicked(e -> CommonUtility.findReplace(false));
+		findSQlTxt.setTooltip(MyTooltipTool.instance("Find"));
+		findSQlTxt.setOnMouseClicked(e -> CommonUtils.findReplace(false));
 
 		runbtn.setOnMouseClicked(e -> {
 			RunSQLHelper.runSQLMethod();
@@ -129,7 +128,6 @@ public class ButtonFactory {
 		DBConns.flushChoiceBox(connsComboBox); // 填充内容
 		// change 事件
 		connsComboBox.getSelectionModel().selectedIndexProperty().addListener((obj, ov, newValue) -> {
-//				System.out.println("choiceBoxChange" + newValue);
 			if (newValue != null && newValue.intValue() > 0) {
 				runbtn.setDisable(false);
 				runLinebtn.setDisable(false);
@@ -140,8 +138,10 @@ public class ButtonFactory {
 				runFunPro.setDisable(true);
 			}
 			// 给代码页面 设置 对应的连接名称, 切换代码页的时候可以自动转换链接
-			MainTabs.setBoxIdx(CommonUtility.tabText(MainTabs.getActTab()), newValue.toString());
+			MyEditorSheet sheet = MyEditorSheetHelper.getActivationEditorSheet();
+			sheet.setTabConnIdx(newValue.intValue());
 		});
+		// 下拉选, 未连接的连接先打开数据库连接
 		connsComboBox.getSelectionModel().selectedItemProperty().addListener(CommonListener.choiceBoxChange2());
 		ComponentGetter.connComboBox = connsComboBox;
 
@@ -160,10 +160,8 @@ public class ButtonFactory {
 		rows.setTooltip(MyTooltipTool.instance("Load query data rows, suggest <10000 "));
 		rows.setText(ConfigVal.MaxRows + "");
 
-//			rows.lengthProperty().addListener(CommonListener.textFieldLimit(rows, 9));
-//			rows.textProperty().addListener(CommonListener.textFieldNumChange(rows));
 		TextFieldSetup.setMaxLength(rows, 9);
-		TextFieldSetup.numberOnly(rows);
+		TextFieldSetup.maxRowsNumberOnly(rows);
 
 		// 失去焦点, 如果没有输入值默认1
 		rows.focusedProperty().addListener((observable, oldValue, newValu) -> {
@@ -235,12 +233,6 @@ public class ButtonFactory {
 		y += fix + 35;
 		rows.setLayoutX(y);
 
-//			AllButtons.btns.put("runbtn", runbtn);
-//			AllButtons.btns.put("stopbtn", stopbtn);
-//			AllButtons.btns.put("runFunPro", runFunPro);
-//			AllButtons.btns.put("runLinebtn", runLinebtn); 
-//			AllButtons.btns.put("addcodeArea", addcodeArea);
-
 		CommonButtons.runbtn = runbtn;
 		CommonButtons.stopbtn = stopbtn;
 		CommonButtons.runFunPro = runFunPro;
@@ -248,15 +240,6 @@ public class ButtonFactory {
 		CommonButtons.addcodeArea = addcodeArea;
 
 		return pn;
-	}
-
-	// 锁住<锁按钮>
-	public static void lockLockBtn(SqluckyBottomSheet mytb, JFXButton btn) {
-		boolean islock = mytb.getTableData().isLock();
-		if (!islock) {
-			mytb.getTableData().setLock(true);
-			btn.setGraphic(IconGenerator.svgImageDefActive("lock"));
-		}
 	}
 
 }
